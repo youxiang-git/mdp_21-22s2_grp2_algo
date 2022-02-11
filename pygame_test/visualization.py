@@ -188,7 +188,7 @@ def main(win, width):
             
             # check if mouse was clicked
             # 0 == left, 1 == middle, 2 == right mouse buttons
-            if pygame.mouse.get_pressed()[0]:
+            if pygame.mouse.get_pressed()[0] and pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
                 print(row, col)
@@ -205,7 +205,7 @@ def main(win, width):
                 elif spot != start: 
                     spot.make_obstacle()
 
-            elif pygame.mouse.get_pressed()[1]:
+            elif pygame.mouse.get_pressed()[1] and pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
                 spot = grid[row][col]
@@ -215,7 +215,7 @@ def main(win, width):
                     print(goal_nodes)
 
 
-            elif pygame.mouse.get_pressed()[2]:
+            elif pygame.mouse.get_pressed()[2] and pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
                 spot = grid[row][col]

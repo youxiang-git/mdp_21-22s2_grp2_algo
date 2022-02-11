@@ -16,6 +16,15 @@ class Environ:
         pygame.display.set_caption("Differential Drive Robot")
         self.map=pygame.display.set_mode((self.width, self.height))
 
+class Robot:
+    def __init__(self, startpos, robotImg, width):
+        self.m2p = 3779.5275
+        self.w = width
+        self.x = startpos[0]
+        self.y = startpos[1]
+        self.theta = 0
+        self.vl = 0.01
+
 pygame.init()
 
 start = (200,200)
@@ -33,3 +42,6 @@ while running:
 
     pygame.display.update()
     environment.map.fill(environment.black)
+
+
+
