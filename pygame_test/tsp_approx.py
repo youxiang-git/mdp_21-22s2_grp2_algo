@@ -3,7 +3,7 @@ import matplotlib
 import numpy as np
 
 def calc_TSP(node_c):
-    g1 = nx.complete_graph(6)
+    g1 = nx.complete_graph(len(node_c))
     # print(g1.nodes)
     for node, node2 in g1.edges:
         # print(node_c[node], node_c[node2])

@@ -1,3 +1,4 @@
+import os
 import pygame
 import math
 
@@ -94,7 +95,9 @@ running = True
 
 environment = Environ(dims)
 
-robot = Robot(start, r"C:\Users\carts\Desktop\School\Y2S2\CZ3004 MDP\mdp_21-22s2_grp2_algo\pygame_test\DDR.png", 0.01*3779.5275)
+base_path = os.path.dirname(__file__)
+robot_path = os.path.join(base_path, "DDR.png")
+robot = Robot(start, robot_path, 0.01*3779.5275)
 
 dt = 0
 
