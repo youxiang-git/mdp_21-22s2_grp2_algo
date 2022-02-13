@@ -229,6 +229,7 @@ def main(win, width):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
                     # pass
+                    goal_nodes = list(set(map(tuple,goal_nodes)))
                     shp = calc_TSP(goal_nodes)
 
 
