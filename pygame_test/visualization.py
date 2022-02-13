@@ -210,9 +210,10 @@ def main(win, width):
                 row, col = get_clicked_pos(pos, ROWS, width)
                 spot = grid[row][col]
                 if spot != start and spot.is_obstacle() == False:
-                    spot.make_goal()
-                    goal_nodes.append((row, col))
-                    print(goal_nodes)
+                    if goal_nodes[len(goal_nodes)-1] != (row, col):
+                        spot.make_goal()
+                        goal_nodes.append((row, col))
+                        print(goal_nodes)
 
 
             elif pygame.mouse.get_pressed()[2] and pygame.MOUSEBUTTONDOWN:
