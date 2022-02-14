@@ -69,6 +69,9 @@ class Spot:
     def is_end(self):
         return self.color == TURQUOISE
 
+    def is_closed(self):
+        return self.color == RED
+
     def reset(self):
         self.color = WHITE
 
@@ -172,7 +175,7 @@ def algorithm(draw, grid, start, end):
                     count += 1
                     open_set.put((f_score[neighbor], count, neighbor))
                     open_set_hash.add(neighbor)
-                    if not neighbor.is_path() and not neighbor.is_goal():
+                    if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_closed():
                         neighbor.make_open()
 
         pygame.time.wait(20)
