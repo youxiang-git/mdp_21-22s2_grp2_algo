@@ -1,9 +1,11 @@
+from tkinter import E
 import pygame
 import math
 from queue import PriorityQueue
 from tsp_approx import calc_TSP
 import numpy as np
 import os
+from RobotCar import RobotCar
 
 pygame.init()
 
@@ -29,8 +31,6 @@ font = pygame.font.SysFont('arial.ttf', 48)
 base_path = os.path.dirname(__file__)
 car_path = os.path.join(base_path, "car.png")
 
-CAR = pygame.image.load(car_path)
-
 """
 Spots = Nodes = Cubes
 This is to keep track of our grid, the node's color and the coordinates it actually is at
@@ -41,6 +41,7 @@ class Spot:
         self.col = col
         self.x = row * width
         self.y = col * width
+        self.heading = None
         self.color = WHITE
         self.neighbors = []
         self.width = width
@@ -90,17 +91,32 @@ class Spot:
     def make_obstacle(self):
         self.color = BLACK
 
-    def make_start(self):
-        self.color = ORANGE
-
-    def make_end(self):
-        self.color = TURQUOISE
+    def make_start(self, start_h):
+        self.heading = start_h
+        self.color = BLUE
+        if self.heading == 0:
+            print("Facing East")
+        elif self.heading == 90:
+            print("Facing North")
+        elif self.heading == 180:
+            print("Facing West")
+        elif self.heading == 270:
+            print("Facing South")
 
     def make_path(self):
         self.color = PURPLE
 
-    def make_goal(self):
+    def make_goal(self, goal_h):
+        self.heading = goal_h
         self.color = TEAL
+        if self.heading == 0:
+            print("Facing East")
+        elif self.heading == 90:
+            print("Facing North")
+        elif self.heading == 180:
+            print("Facing West")
+        elif self.heading == 270:
+            print("Facing South")
 
     def start_area(self):
         self.color = YELLOW
@@ -219,17 +235,25 @@ def draw(win, grid, rows, width, shp, gn):
     for x in shp:
         text = font.render(str(shp[x]), True, BLACK)
         textRect = text.get_rect()
-        textRect.topleft = np.array(gn[x]) * (WIDTH // ROWS)
-        carRect = CAR.get_rect()
-        car_x, car_y = np.array(gn[0]) * (WIDTH // ROWS)
-        car_x = car_x + ((WIDTH // ROWS) / 2)
-        car_y = car_y + (WIDTH // ROWS)
-        carRect.midbottom = (car_x, car_y)
+        textRect.topleft = np.array(gn[x][:2]) * (WIDTH // ROWS)
         win.blit(text, textRect)
-        car_copy = CAR.copy()
-        car_copy.set_alpha(48)
-        win.blit(car_copy, carRect)
-        
+        car = RobotCar(2.1, 3.0, car_path, gn[0], (WIDTH // ROWS))
+        carRect = car.rect
+        car_heading = car.theta
+        if car_heading == 90:
+            car_x = car.x + ((WIDTH // ROWS) / 2)
+            car_y = car.y + (WIDTH // ROWS)
+            # car.print_state()
+            carRect.midbottom = (car_x, car_y)
+            car.car_img.set_alpha(48)
+            win.blit(car.car_img, carRect)
+
+        elif car_heading == 0:
+            car_x = car.x
+            car_y = car.y + ((WIDTH // ROWS) / 2)
+            carRect.midleft = (car_x, car_y)
+            car.rotated.set_alpha(48)
+            win.blit(car.rotated, carRect)
 
     draw_grid(win, rows, width)
 
@@ -277,44 +301,74 @@ def main(win, width):
             
             # check if mouse was clicked
             # 0 == left, 1 == middle, 2 == right mouse buttons
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    print(row, col)
+                    spot = grid[row][col]
+                    if not start and row < 3 and col > 15:
+                        start = spot
+                        start.make_start(0)
+                        goal_nodes.append((row, col, 0))
+                elif event.key == pygame.K_f:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    print(row, col)
+                    spot = grid[row][col]
+                    if not start and row < 3 and col > 15:
+                        start = spot
+                        start.make_start(90)
+                        goal_nodes.append((row, col, 90))
+            
+                elif event.key == pygame.K_w:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    spot = grid[row][col]
+                    if spot != start and spot.is_obstacle() == False:
+                        if goal_nodes[len(goal_nodes)-1] != (row, col):
+                            spot.make_goal(90)
+                            goal_nodes.append((row, col, 90))
+                            print(goal_nodes)
+
+                elif event.key == pygame.K_a:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    spot = grid[row][col]
+                    if spot != start and spot.is_obstacle() == False:
+                        if goal_nodes[len(goal_nodes)-1] != (row, col):
+                            spot.make_goal(180)
+                            goal_nodes.append((row, col, 180))
+                            print(goal_nodes)
+
+
+                elif event.key == pygame.K_s:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    spot = grid[row][col]
+                    if spot != start and spot.is_obstacle() == False:
+                        if goal_nodes[len(goal_nodes)-1] != (row, col):
+                            spot.make_goal(270)
+                            goal_nodes.append((row, col, 270))
+                            print(goal_nodes)
+
+                elif event.key == pygame.K_d:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    spot = grid[row][col]
+                    if spot != start and spot.is_obstacle() == False:
+                        if goal_nodes[len(goal_nodes)-1] != (row, col):
+                            spot.make_goal(0)
+                            goal_nodes.append((row, col, 0))
+                            print(goal_nodes)
+
             if pygame.mouse.get_pressed()[0] and pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
                 print(row, col)
                 spot = grid[row][col]
-                if not start and row < 3 and col > 15:
-                    start = spot
-                    start.make_start()
-                    goal_nodes.append((row, col))
-
-                # elif not end and spot != start:
-                #     end = spot
-                #     end.make_end()
-
-                elif spot != start: 
-                    spot.make_obstacle()
-
-            elif pygame.mouse.get_pressed()[1] and pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                row, col = get_clicked_pos(pos, ROWS, width)
-                spot = grid[row][col]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row, col):
-                        spot.make_goal()
-                        goal_nodes.append((row, col))
-                        print(goal_nodes)
-
-
-            elif pygame.mouse.get_pressed()[2] and pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                row, col = get_clicked_pos(pos, ROWS, width)
-                spot = grid[row][col]
-                spot.reset()
-                if spot == start:
-                    start = None
-
-                elif spot == end:
-                    end = None
+                spot.make_obstacle()
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
@@ -331,12 +385,12 @@ def main(win, width):
                     
                     while len(shp2) != 1:
                         n = shp2[0]
-                        row, col = goal_nodes[n]
+                        row, col = goal_nodes[n][:2]
                         print("start is " + str(row), str(col))
                         start = grid[row][col]
                         print("popping " + str(shp2.pop(0)))
                         end_node = shp2[0]
-                        row, col = goal_nodes[end_node]
+                        row, col = goal_nodes[end_node][:2]
                         print(row, col)
                         end = grid[row][col]
                         algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes), grid, start, end)
