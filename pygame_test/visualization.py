@@ -1,9 +1,9 @@
-import re
 import pygame
 import math
 from queue import PriorityQueue
 from tsp_approx import calc_TSP
 import numpy as np
+import os
 
 pygame.init()
 
@@ -26,6 +26,10 @@ TURQUOISE = (64, 224, 208)
 TEAL = (2, 253, 252)
 
 font = pygame.font.SysFont('arial.ttf', 48)
+base_path = os.path.dirname(__file__)
+car_path = os.path.join(base_path, "car.png")
+
+CAR = pygame.image.load(car_path)
 
 """
 Spots = Nodes = Cubes
@@ -122,13 +126,11 @@ class Spot:
     def __lt__(self, other):
         return False
 
-# class RobotCar:
-#     def __init__(self, l, w):
-
 # our A* heuristic, h(x)
 def h(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
+    eu_d = abs(x1 - x2)
     return abs(x1 - x2) + abs(y1 - y2)
 
 def reconstruct_path(came_from, current, draw):
@@ -218,8 +220,17 @@ def draw(win, grid, rows, width, shp, gn):
         text = font.render(str(shp[x]), True, BLACK)
         textRect = text.get_rect()
         textRect.topleft = np.array(gn[x]) * (WIDTH // ROWS)
+        carRect = CAR.get_rect()
+        car_x, car_y = np.array(gn[0]) * (WIDTH // ROWS)
+        car_x = car_x + ((WIDTH // ROWS) / 2)
+        car_y = car_y + (WIDTH // ROWS)
+        carRect.midbottom = (car_x, car_y)
         win.blit(text, textRect)
-            
+        car_copy = CAR.copy()
+        car_copy.set_alpha(48)
+        win.blit(car_copy, carRect)
+        
+
     draw_grid(win, rows, width)
 
     pygame.display.update()
@@ -247,7 +258,6 @@ def main(win, width):
 
     while run:
         draw(win, grid, ROWS, width, shp, goal_nodes)
-
         # pygame.time.Clock().tick(60)
 
         if not start:
@@ -255,6 +265,7 @@ def main(win, width):
                 for j in range(16, 20):
                     spot = grid[i][j]
                     spot.start_area()
+            
 
         for event in pygame.event.get():
             # always check if user has quit the game first
