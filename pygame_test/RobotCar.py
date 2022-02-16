@@ -13,8 +13,8 @@ class RobotCar:
         self.width = w * self.g_width
         self.length = l * self.g_width
         self.car_img = pygame.image.load(carImg)
-        self.max_angle = math.radians(30)
-        self.rotated = pygame.transform.rotate(self.car_img.copy(), -90)
+        self.max_angle = math.radians(24)
+        self.rotated = pygame.transform.rotate(self.car_img.copy(), self.theta)
         self.rect = self.car_img.get_rect()
 
     def print_state(self):

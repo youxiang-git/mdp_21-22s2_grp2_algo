@@ -174,12 +174,13 @@ def algorithm(draw, grid, start, end):
                 pygame.quit()
         
         current = open_set.get()[2]
+        # print(current)
         open_set_hash.remove(current)
 
         if current == end:
             reconstruct_path(came_from, end, draw)
-            start.make_start()
-            end.make_goal()
+            start.make_start(0)
+            end.make_goal(0)
             return True
 
         for neighbor in current.neighbors:
@@ -233,9 +234,9 @@ def draw(win, grid, rows, width, shp, gn):
             spot.draw(win)
 
     for x in shp:
-        text = font.render(str(shp[x]), True, BLACK)
+        text = font.render(str(x), True, BLACK)
         textRect = text.get_rect()
-        textRect.topleft = np.array(gn[x][:2]) * (WIDTH // ROWS)
+        textRect.topleft = np.array(gn[shp[x]][:2]) * (WIDTH // ROWS)
         win.blit(text, textRect)
         car = RobotCar(2.1, 3.0, car_path, gn[0], (WIDTH // ROWS))
         carRect = car.rect
@@ -245,15 +246,15 @@ def draw(win, grid, rows, width, shp, gn):
             car_y = car.y + (WIDTH // ROWS)
             # car.print_state()
             carRect.midbottom = (car_x, car_y)
-            car.car_img.set_alpha(48)
-            win.blit(car.car_img, carRect)
+            car.rotated.set_alpha(48)
+            win.blit(car.rotated, carRect)
 
         elif car_heading == 0:
             car_x = car.x
             car_y = car.y + ((WIDTH // ROWS) / 2)
             carRect.midleft = (car_x, car_y)
-            car.rotated.set_alpha(48)
-            win.blit(car.rotated, carRect)
+            car.car_img.set_alpha(48)
+            win.blit(car.car_img, carRect)
 
     draw_grid(win, rows, width)
 
