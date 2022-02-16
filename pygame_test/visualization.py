@@ -77,9 +77,6 @@ class Spot:
     def is_closed(self):
         return self.color == RED
 
-    def reset(self):
-        self.color = WHITE
-
     def make_close(self):
         self.color = RED
 
@@ -93,7 +90,7 @@ class Spot:
 
     def make_start(self, start_h):
         self.heading = start_h
-        self.color = BLUE
+        self.color = ORANGE
         if self.heading == 0:
             print("Facing East")
         elif self.heading == 90:
@@ -194,13 +191,13 @@ def algorithm(draw, grid, start, end):
                     count += 1
                     open_set.put((f_score[neighbor], count, neighbor))
                     open_set_hash.add(neighbor)
-                    if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_closed():
+                    if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_start() and not neighbor.is_close():
                         neighbor.make_open()
 
         pygame.time.wait(20)
         draw()
 
-        if current != start and not current.is_path() and not current.is_goal():
+        if current != start and not current.is_path() and not current.is_goal() and not current.is_start():
             current.make_close()
 
     return False
