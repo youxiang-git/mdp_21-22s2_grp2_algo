@@ -3,7 +3,7 @@ import matplotlib
 import numpy as np
 
 def calc_TSP(node_c):
-    g1 = nx.complete_graph(6)
+    g1 = nx.complete_graph(len(node_c))
 
     node_c_no_h = []
     for x in node_c:
