@@ -109,13 +109,13 @@ class Spot:
         self.heading = goal_h
         self.color = TEAL
         if self.heading == 0:
-            print("Facing East")
+            print("On West")
         elif self.heading == 90:
-            print("Facing North")
+            print("On South")
         elif self.heading == 180:
-            print("Facing West")
+            print("On East")
         elif self.heading == 270:
-            print("Facing South")
+            print("On North")
 
     def start_area(self):
         self.color = YELLOW
@@ -162,16 +162,47 @@ def h(p1, p2):
     x2, y2, h2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, draw):
+def reconstruct_path(came_from, current, draw, car):
+    path = []
+    path.append(current.get_pos())
     while current in came_from:
         current = came_from[current]
-        print(current.get_pos())
+        current_pos = current.get_pos()
+        path.append(current_pos)
         if not current.is_goal():
             current.make_path()
         draw()
         pygame.time.wait(30)
+    
+    path_r = list(reversed(path))
 
-def algorithm(draw, grid, start, end):
+    for c in range(len(path_r)):
+        cx, cy, cheading = path_r[c]
+        if c+1 < len(path_r):
+            path_r[c+1] = list(path_r[c+1])
+            nx, ny, nheading = path_r[c+1]
+            print(f"cx = {cx}, cy = {cy}, nx = {nx}, ny = {ny}")
+            if nx > cx:
+                cheading = 0
+            elif nx < cx:
+                cheading = 180
+            elif ny > cy:
+                cheading = 270
+            elif ny < cy:
+                cheading = 90
+        
+        car.set_pos((cx, cy, cheading))
+        draw()
+        pygame.time.wait(100)
+    
+    # for c in path:
+    #     print(c)
+
+    # return path
+
+    
+
+def algorithm(draw, grid, start, end, car):
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # Add the start node to the priority queue
@@ -194,7 +225,7 @@ def algorithm(draw, grid, start, end):
         open_set_hash.remove(current)
 
         if current == end:
-            reconstruct_path(came_from, end, draw)
+            reconstruct_path(came_from, end, draw, car)
             return True
 
         for neighbor in current.neighbors:
@@ -240,22 +271,22 @@ def draw_grid(win, rows, width):
         for j in range(rows):
             pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
 
-def draw(win, grid, rows, width, shp, gn):
+def draw(win, grid, rows, width, shp, gn, car):
     win.fill(WHITE)
 
     for row in grid:
         for spot in row:
             spot.draw(win)
 
-    if len(shp): 
-        car = RobotCar(2.1, 3.0, car_img_path, gn[0], (WIDTH // ROWS))
-        car_x = car.x + ((WIDTH // ROWS) / 2)
-        car_y = car.y + ((WIDTH // ROWS) / 2)
-        car_heading = car.theta
-        drawn_car = car.rotate_self(car_heading)
-        drawn_car_rect = drawn_car.get_rect()
-        drawn_car_rect.center = (car_x, car_y)
-        win.blit(drawn_car, drawn_car_rect)
+        if len(shp):
+            car_x = car.x + ((WIDTH // ROWS) / 2)
+            car_y = car.y + ((WIDTH // ROWS) / 2)
+            car_heading = car.theta
+            # print(car_heading)
+            drawn_car = car.rotate_self(car_heading)
+            drawn_car_rect = drawn_car.get_rect()
+            drawn_car_rect.center = (car_x, car_y)
+            win.blit(drawn_car, drawn_car_rect)
 
     for x in shp:
         text = font.render(str(x), True, BLACK)
@@ -287,9 +318,10 @@ def main(win, width):
     started = False
     goal_nodes = []
     shp = []
+    car = RobotCar(2.1, 3.0, car_img_path, (-100, -100, 0), (WIDTH // ROWS))
 
     while run:
-        draw(win, grid, ROWS, width, shp, goal_nodes)
+        draw(win, grid, ROWS, width, shp, goal_nodes, car)
         # pygame.time.Clock().tick(60)
 
         if not start:
@@ -436,17 +468,15 @@ def main(win, width):
                     
                     while len(shp2) != 1:
                         n = shp2[0]
-                        row, col = goal_nodes[n][:2]
+                        row, col, heading = goal_nodes[n]
                         print("start is " + str(row), str(col))
                         start = grid[row][col]
                         print("popping " + str(shp2.pop(0)))
                         end_node = shp2[0]
-                        row, col = goal_nodes[end_node][:2]
-                        print(row, col)
+                        row, col, heading = goal_nodes[end_node]
+                        print(row, col, heading)
                         end = grid[row][col]
-                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes), grid, start, end)
-
-
+                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes, car), grid, start, end, car)
     
     pygame.quit()
 

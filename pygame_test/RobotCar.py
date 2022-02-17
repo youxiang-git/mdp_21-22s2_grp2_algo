@@ -24,22 +24,27 @@ class RobotCar:
     def rotate_self(self, angle):
         arrow_l = 50
         img_w, img_h = self.car_img.get_size()
+        carImageCopy = self.car_img.copy()
         rect2 = pygame.Surface((img_w*2, img_h*2), pygame.SRCALPHA)
         rect_2_center = (rect2.get_width() / 2, rect2.get_height() / 2)
         rect_2_arrow_end = (rect2.get_width() / 2 + arrow_l, rect2.get_height() / 2)
-        rect2.blit(self.car_img, (img_w-25, img_h-60))
+        rect2.blit(carImageCopy, (img_w-25, img_h-60))
         pygame.draw.line(rect2,RED, rect_2_center, rect_2_arrow_end, 3)
         pygame.draw.polygon(rect2, RED, [(rect2.get_width() / 2 + arrow_l, rect2.get_height() / 2 - 10), (rect2.get_width() / 2 + arrow_l + 10, rect2.get_height() / 2), (rect2.get_width() / 2 + arrow_l, rect2.get_height() / 2 + 10)], 5)
-
         return pygame.transform.rotate(rect2, angle)
 
-def main():
+    def set_pos(self, pos):
+        self.x = (pos[0] * self.d2)
+        self.y = (pos[1] * self.d2)
+        self.theta = pos[2]
 
-    dist = round(math.sqrt(40 ** 2 + 40 ** 2))
-    print("dist is " + str(dist))
-    dist_grid = dist // 40
-    print(dist_grid)
+# def main():
+
+#     dist = round(math.sqrt(40 ** 2 + 40 ** 2))
+#     print("dist is " + str(dist))
+#     dist_grid = dist // 40
+#     print(dist_grid)
 
 
 
-main()
+# main()

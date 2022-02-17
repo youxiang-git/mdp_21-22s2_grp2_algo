@@ -1,1 +1,1 @@
-get_rect
+print(shp)
