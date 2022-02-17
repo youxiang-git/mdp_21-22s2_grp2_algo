@@ -16,6 +16,8 @@ class RobotCar:
         self.car_img = pygame.image.load(carImg)
         self.max_angle = math.radians(24)
 
+    def get_pos(self):
+        return self.x, self.y, self.theta
 
     def print_state(self):
         print(f"state is : {self.x}, {self.y}, {self.theta}")
@@ -32,6 +34,9 @@ class RobotCar:
         pygame.draw.line(rect2,RED, rect_2_center, rect_2_arrow_end, 3)
         pygame.draw.polygon(rect2, RED, [(rect2.get_width() / 2 + arrow_l, rect2.get_height() / 2 - 10), (rect2.get_width() / 2 + arrow_l + 10, rect2.get_height() / 2), (rect2.get_width() / 2 + arrow_l, rect2.get_height() / 2 + 10)], 5)
         return pygame.transform.rotate(rect2, angle)
+
+    def get_theta(self):
+        return self.theta
 
     def set_pos(self, pos):
         self.x = (pos[0] * self.d2)

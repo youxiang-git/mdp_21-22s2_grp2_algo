@@ -49,6 +49,9 @@ class Spot:
     def get_pos(self):
         return self.row, self.col, self.heading
 
+    def get_heading(self):
+        return self.heading
+
     # this method tells us if this node has been already visited / considered
     def is_close(self):
         return self.color == RED
@@ -123,19 +126,98 @@ class Spot:
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
-    def update_neighbors(self, grid):
-        self.neighbors = []
-        if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_obstacle(): # NORTH
-            self.neighbors.append(grid[self.row + 1][self.col])
+    def set_heading(self, p):
+        self.heading = p
+        
+    def update_neighbors(self, grid, pose):
 
-        if self.row > 0 and not grid[self.row - 1][self.col].is_obstacle(): # SOUTH
-            self.neighbors.append(grid[self.row - 1][self.col])
+        print(pose)
 
-        if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_obstacle(): # EAST
-            self.neighbors.append(grid[self.row][self.col + 1])
+        print(f"self row, self col = {self.row}, {self.col}")
 
-        if self.col > 0 and not grid[self.row][self.col - 1].is_obstacle(): # WEST
-            self.neighbors.append(grid[self.row][self.col - 1])
+        if pose == 0:
+            if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_obstacle(): # UP
+                self.neighbors.append(grid[self.row + 1][self.col])
+                self.neighbors[-1].set_heading(pose) 
+
+            if self.row > 0 and not grid[self.row - 1][self.col].is_obstacle(): # DOWN
+                self.neighbors.append(grid[self.row - 1][self.col])
+                self.neighbors[-1].set_heading(pose) 
+        
+        elif pose == 180:
+            if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_obstacle(): # UP
+                self.neighbors.append(grid[self.row + 1][self.col])
+                self.neighbors[-1].set_heading(pose)
+
+            if self.row > 0 and not grid[self.row - 1][self.col].is_obstacle(): # DOWN
+                self.neighbors.append(grid[self.row - 1][self.col])
+                self.neighbors[-1].set_heading(pose) 
+
+        elif pose == 90:
+            if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_obstacle(): # RIGHT
+                self.neighbors.append(grid[self.row][self.col + 1])
+                self.neighbors[-1].set_heading(pose)
+
+            if self.col > 0 and not grid[self.row][self.col - 1].is_obstacle(): # LEFT
+                self.neighbors.append(grid[self.row][self.col - 1])
+                self.neighbors[-1].set_heading(pose) 
+
+        elif pose == 270:
+            if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_obstacle(): # RIGHT
+                self.neighbors.append(grid[self.row][self.col + 1])
+                self.neighbors[-1].set_heading(pose)
+
+            if self.col > 0 and not grid[self.row][self.col - 1].is_obstacle(): # LEFT
+                self.neighbors.append(grid[self.row][self.col - 1])
+                self.neighbors[-1].set_heading(pose)
+
+        if self.col >= 3 and self.row < self.total_rows - 3 and not grid[self.row + 3][self.col - 3].is_obstacle(): #FR
+            # print("FR true")
+            self.neighbors.append(grid[self.row + 3][self.col - 3])
+            if pose == 0:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 90:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 180:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 270:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            
+        if self.col < self.total_rows - 3 and self.row < self.total_rows - 3 and not grid[self.row + 3][self.col + 3].is_obstacle(): # BR
+            # print("BR true")
+            self.neighbors.append(grid[self.row + 3][self.col + 3])
+            if pose == 0:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 90:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 180:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 270:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+
+        if self.col >= 3 and self.row >= 3 and not grid[self.row - 3][self.col - 3].is_obstacle(): #FL
+            # print("FL true")
+            self.neighbors.append(grid[self.row - 3][self.col - 3])
+            if pose == 0:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 90:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 180:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 270:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+
+        if self.col < self.total_rows -3 and self.row >= 3 and not grid[self.row][self.col - 1].is_obstacle(): # BL
+            # print("BL true")
+            self.neighbors.append(grid[self.row - 3][self.col + 3]) 
+            if pose == 0:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 90:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
+            if pose == 180:
+                self.neighbors[-1].set_heading((pose + 90) % 360)
+            if pose == 270:
+                self.neighbors[-1].set_heading((pose - 90) % 360)
 
         # if self.row > 0 and self.col > 0 and not grid[self.row - 1][self.col - 1].is_obstacle(): # SOUTH-WEST
         #     self.neighbors.append(grid[self.row - 1][self.col - 1])
@@ -172,37 +254,37 @@ def reconstruct_path(came_from, current, draw, car):
         if not current.is_goal():
             current.make_path()
         draw()
-        pygame.time.wait(30)
+        pygame.time.wait(200)
     
     path_r = list(reversed(path))
 
     for c in range(len(path_r)):
         cx, cy, cheading = path_r[c]
+        print(f"cx = {cx}, cy = {cy}, cheading = {cheading}")
         if c+1 < len(path_r):
             path_r[c+1] = list(path_r[c+1])
             nx, ny, nheading = path_r[c+1]
-            print(f"cx = {cx}, cy = {cy}, nx = {nx}, ny = {ny}")
-            if nx > cx:
-                cheading = 0
-            elif nx < cx:
-                cheading = 180
-            elif ny > cy:
-                cheading = 270
-            elif ny < cy:
-                cheading = 90
+            # print(f"cx = {cx}, cy = {cy}, nx = {nx}, ny = {ny}, cheading = {cheading}")
+            # if nx > cx:
+            #     cheading = 0
+            # elif nx < cx:
+            #     cheading = 180
+            # elif ny > cy:
+            #     cheading = 270
+            # elif ny < cy:
+            #     cheading = 90
         
         car.set_pos((cx, cy, cheading))
         draw()
-        pygame.time.wait(100)
+        pygame.time.wait(1000)
     
     # for c in path:
     #     print(c)
 
     # return path
 
-    
+def algorithm(draw, grid, start, end, e_pose, car):
 
-def algorithm(draw, grid, start, end, car):
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # Add the start node to the priority queue
@@ -214,6 +296,10 @@ def algorithm(draw, grid, start, end, car):
 
     #check items in PQ
     open_set_hash = {start}
+    sx, sy, s_pose = start.get_pos()
+    print(f"car starting pose = {s_pose}")
+    start.update_neighbors(grid, s_pose)
+
 
     while not open_set.empty():
         for event in pygame.event.get():
@@ -224,11 +310,14 @@ def algorithm(draw, grid, start, end, car):
         # print(current)
         open_set_hash.remove(current)
 
-        if current == end:
+        if current == end and current.get_heading() == e_pose:
             reconstruct_path(came_from, end, draw, car)
             return True
 
         for neighbor in current.neighbors:
+            nx, ny, n_pose = neighbor.get_pos()
+            if not neighbor == end:
+                neighbor.update_neighbors(grid, n_pose)
             temp_g_score = g_score[current] + 1
 
             if temp_g_score < g_score[neighbor]:
@@ -242,7 +331,7 @@ def algorithm(draw, grid, start, end, car):
                     if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_start() and not neighbor.is_close():
                         neighbor.make_open()
 
-        pygame.time.wait(10)
+        # pygame.time.wait(10)
         draw()
 
         if current != start and not current.is_path() and not current.is_goal() and not current.is_start():
@@ -357,7 +446,7 @@ def main(win, width):
                     row, col = get_clicked_pos(pos, ROWS, width)
                     print(row, col)
                     spot = grid[row][col]
-                    if not start and row < 3 and col > 15:
+                    if not start and row < 4 and col > 15:
                         start = spot
                         start.make_start(90)
                         goal_nodes.append((row, col, 90))
@@ -461,10 +550,6 @@ def main(win, width):
                     shp2.pop()
                     print(shp2)
                     print(shp)
-
-                    for row in grid:
-                        for spot in row:
-                            spot.update_neighbors(grid)
                     
                     while len(shp2) != 1:
                         n = shp2[0]
@@ -476,7 +561,8 @@ def main(win, width):
                         row, col, heading = goal_nodes[end_node]
                         print(row, col, heading)
                         end = grid[row][col]
-                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes, car), grid, start, end, car)
+                        end_pose = heading
+                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes, car), grid, start, end, end_pose, car)
     
     pygame.quit()
 
