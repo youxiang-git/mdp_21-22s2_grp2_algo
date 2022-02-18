@@ -47,7 +47,7 @@ class Robot:
 
     def move(self, coord):
         self.rotated = pygame.transform.rotozoom(self.img, math.degrees(coord[2]), 1)
-        self.rect = self.rotated.get_rect(center = (coord[0]*40, (abs(coord[1]-0.5-19)+0.5)*40))
+        self.rect = self.rotated.get_rect(center = (coord[0], abs(coord[1]-799)))
 
 """
 Spots = Nodes = Cubes
@@ -180,10 +180,10 @@ def get_clicked_pos(pos, rows, width):
 
 def drawPath(win, coord, robot):
     if len(coord) >= 3:
-        drawPoint = [(coord[0])*40, (abs(coord[1]-0.5-19)+0.5)*40]
+        drawPoint = [(coord[0]), (abs(coord[1]-799))]
         pygame.draw.circle(win, RED, drawPoint, 5, 5)
-        #robot.move(coord)
-        #robot.draw(win)
+        robot.move(coord)
+        robot.draw(win)
         pygame.display.update()
 
 def main(win, width):
@@ -240,7 +240,7 @@ def main(win, width):
                     start = spot
                     start.make_start()
                     goal_nodes.append((row, col))
-                    goal_nodes_with_dir.append([row+0.5, abs(col-19)+0.5, np.deg2rad(90.0)])
+                    goal_nodes_with_dir.append([row*40+20, abs(col-19)*40+20, np.deg2rad(90.0)])
 
                 # elif not end and spot != start:
                 #     end = spot
@@ -248,7 +248,7 @@ def main(win, width):
 
                 elif spot != start: 
                     spot.make_obstacle()
-                    obstacle_nodes.append((row+0.5, abs(col-19)+0.5)+(2,))
+                    obstacle_nodes.append((row*40+20, abs(col-19)*40+20)+(2,))
 
             elif pygame.mouse.get_pressed()[1] and pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
@@ -260,13 +260,13 @@ def main(win, width):
                         goal_nodes.append((row, col))
 
                         if win.get_at((row*41, (col+1)*41)) == BLACK:
-                            goal_nodes_with_dir.append([row+0.5, abs(col-2-19)+0.5, np.deg2rad(-90)])
+                            goal_nodes_with_dir.append([row*40+20, abs(col-2-19)*40+20, np.deg2rad(-90)])
                         elif win.get_at((row*41, (col-1)*41)) == BLACK:
-                            goal_nodes_with_dir.append([row+0.5, abs(col+2-19)+0.5, np.deg2rad(90)])
+                            goal_nodes_with_dir.append([row*40+20, abs(col+2-19)*40+20, np.deg2rad(90)])
                         elif win.get_at(((row-1)*41, col*41)) == BLACK:
-                            goal_nodes_with_dir.append([row+2+0.5, abs(col-19)+0.5, np.deg2rad(180)])
+                            goal_nodes_with_dir.append([(row+2)*40+20, abs(col-19)*40+20, np.deg2rad(180)])
                         else:
-                            goal_nodes_with_dir.append([row-2+0.5, abs(col-19)+0.5, np.deg2rad(0)])
+                            goal_nodes_with_dir.append([(row-2)*40+20, abs(col-19)*40+20, np.deg2rad(0)])
 
                         print(goal_nodes)
 
@@ -296,7 +296,7 @@ def main(win, width):
                         print(i)
                         print(goal_nodes_with_dir[shp[i]])
                         print(goal_nodes_with_dir[shp[i+1]])
-                        path = findPath(goal_nodes_with_dir[shp[i]], goal_nodes_with_dir[shp[i+1]], obstacle_nodes, 50)
+                        path = findPath(goal_nodes_with_dir[shp[i]], goal_nodes_with_dir[shp[i+1]], obstacle_nodes, 10)
                         print(path)
                         print(path[::-1])
                         allPath.extend(path[::-1])

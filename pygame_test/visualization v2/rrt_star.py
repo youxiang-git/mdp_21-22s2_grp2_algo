@@ -37,7 +37,7 @@ class RRTStar(RRT):
                  goal,
                  obstacle_list,
                  rand_area,
-                 expand_dis=30.0,
+                 expand_dis=120.0,
                  path_resolution=1.0,
                  goal_sample_rate=20,
                  max_iter=300,
@@ -258,13 +258,24 @@ def main():
         (6, 12, 1),
     ]  # [x,y,size(radius)]
 
+    obstacle_list = [
+        (200, 200, 40),
+        (120, 240, 80),
+        (120, 320, 80),
+        (120, 400, 80),
+        (280, 200, 80),
+        (360, 200, 80),
+        (320, 400, 40),
+        (240, 480, 40),
+    ]  # [x,y,size(radius)]
+
     # Set Initial parameters
     rrt_star = RRTStar(
-        start=[0, 0],
-        goal=[6, 10],
-        rand_area=[-2, 15],
+        start=[80, 80], #[0, 0]
+        goal=[240, 400], #[6, 10]
+        rand_area=[40, 760], #[-2, 15]
         obstacle_list=obstacle_list,
-        expand_dis=1)
+        expand_dis=120) #1
     path = rrt_star.planning(animation=show_animation)
 
     if path is None:

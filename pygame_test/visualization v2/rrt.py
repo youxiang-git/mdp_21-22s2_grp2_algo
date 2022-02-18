@@ -46,7 +46,7 @@ class RRT:
                  goal,
                  obstacle_list,
                  rand_area,
-                 expand_dis=3.0,
+                 expand_dis=120.0,
                  path_resolution=0.5,
                  goal_sample_rate=5,
                  max_iter=500,
@@ -192,7 +192,7 @@ class RRT:
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.end.x, self.end.y, "xr")
         plt.axis("equal")
-        plt.axis([-2, 15, -2, 15])
+        plt.axis([0, 800, 0, 800])
         plt.grid(True)
         plt.pause(0.01)
 
@@ -249,17 +249,21 @@ class RRT:
         return d, theta
 
 
-def main(gx=6.0, gy=10.0):
+def main(gx=240.0, gy=400.0): #(gx=6.0, gy=10.0)
     print("start " + __file__)
 
     # ====Search Path with RRT====
     obstacleList = [(5, 5, 1), (3, 6, 2), (3, 8, 2), (3, 10, 2), (7, 5, 2),
                     (9, 5, 2), (8, 10, 1)]  # [x, y, radius]
+
+    obstacleList = [(200, 200, 40), (120, 240, 80), (120, 320, 80), (120, 400, 80), (280, 200, 80),
+                    (360, 200, 80), (320, 400, 40)]  # [x, y, radius]
+
     # Set Initial parameters
     rrt = RRT(
-        start=[0, 0],
+        start=[80, 80], #[0, 0]
         goal=[gx, gy],
-        rand_area=[-2, 15],
+        rand_area=[40, 760],
         obstacle_list=obstacleList,
         # play_area=[0, 10, 0, 14]
         )

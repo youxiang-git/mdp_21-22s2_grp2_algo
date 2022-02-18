@@ -45,7 +45,7 @@ class RRTStarReedsShepp(RRTStar):
 
     def __init__(self, start, goal, obstacle_list, rand_area,
                  max_iter=200,
-                 connect_circle_dist=50.0
+                 connect_circle_dist=2000.0
                  ):
         """
         Setting Parameter
@@ -64,7 +64,7 @@ class RRTStarReedsShepp(RRTStar):
         self.obstacle_list = obstacle_list
         self.connect_circle_dist = connect_circle_dist
 
-        self.curvature = 1.0
+        self.curvature = 0.01
         self.goal_yaw_th = np.deg2rad(1.0)
         self.goal_xy_th = 0.5
 
@@ -136,7 +136,7 @@ class RRTStarReedsShepp(RRTStar):
 
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.end.x, self.end.y, "xr")
-        plt.axis([0, 20, 0, 20])
+        plt.axis([0, 800, 0, 800])
         plt.grid(True)
         self.plot_start_goal_arrow()
         plt.pause(0.01)
@@ -229,15 +229,15 @@ def findPath(start, goal, obstacleList ,max_iter):
 
     rrt_star_reeds_shepp = RRTStarReedsShepp(start, goal,
                                              obstacleList,
-                                             [1.0, 19.0], max_iter=max_iter)
+                                             [40.0, 760.0], max_iter=max_iter)
     path = rrt_star_reeds_shepp.planning(animation=show_animation)
     
     if path and show_animation:  # pragma: no cover
-            rrt_star_reeds_shepp.draw_graph()
-            plt.plot([x for (x, y, yaw) in path], [y for (x, y, yaw) in path], '-r')
-            plt.grid(True)
-            plt.pause(0.001)
-            plt.show()
+        rrt_star_reeds_shepp.draw_graph()
+        plt.plot([x for (x, y, yaw) in path], [y for (x, y, yaw) in path], '-r')
+        plt.grid(True)
+        plt.pause(0.001)
+        plt.show()
 
     return path
 
@@ -257,13 +257,25 @@ def main(max_iter=100):
         (8, 10, 1)
     ]  # [x,y,size(radius)]
 
+    obstacleList = [
+        (200, 200, 1),
+        (160, 240, 1),
+        (160, 320, 1),
+        (160, 400, 1),
+        (240, 200, 1),
+        (280, 200, 1),
+        (320, 240, 1),
+        (320, 320, 1),
+        (320, 400, 1)
+    ]  # [x,y,size(radius)]
+
     # Set Initial parameters
-    start = [2.0, 2.0, np.deg2rad(90.0)]
-    goal = [6.0, 7.0, np.deg2rad(90.0)]
+    start = [80.0, 80.0, np.deg2rad(90.0)]
+    goal = [240.0, 280.0, np.deg2rad(90.0)]
 
     rrt_star_reeds_shepp = RRTStarReedsShepp(start, goal,
                                              obstacleList,
-                                             [1.0, 19.0], max_iter=max_iter)
+                                             [40.0, 760.0], max_iter=max_iter)
     path = rrt_star_reeds_shepp.planning(animation=show_animation)
 
     print(path)

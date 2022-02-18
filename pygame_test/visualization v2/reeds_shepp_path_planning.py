@@ -30,7 +30,7 @@ class Path:
         self.directions = []  # directions (1:forward, -1:backward)
 
 
-def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
+def plot_arrow(x, y, yaw, length=40.0, width=20, fc="r", ec="k"):
     if isinstance(x, list):
         for (ix, iy, iyaw) in zip(x, y, yaw):
             plot_arrow(ix, iy, iyaw)
@@ -341,15 +341,15 @@ def reeds_shepp_path_planning(sx, sy, syaw, gx, gy, gyaw, maxc, step_size=0.2):
 def main():
     print("Reeds Shepp path planner sample start!!")
 
-    start_x = -6.0  # [m]
-    start_y = -4.0  # [m]
+    start_x = -240.0  # [m] -6.0
+    start_y = -160.0  # [m] -4.0
     start_yaw = np.deg2rad(90.0)  # [rad]
 
-    end_x = 4.0  # [m]
-    end_y = 2.0  # [m]
+    end_x = 160.0  # [m] 4.0
+    end_y = 80.0  # [m] 2.0
     end_yaw = np.deg2rad(-90.0)  # [rad]
 
-    curvature = 0.1
+    curvature = 0.01
     step_size = 0.05
 
     xs, ys, yaws, modes, lengths = reeds_shepp_path_planning(start_x, start_y,
