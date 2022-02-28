@@ -1,20 +1,11 @@
-from cgi import test
-from tabnanny import check
-import pygame
-import math
 from queue import PriorityQueue
-from tsp_approx import calc_TSP
 import numpy as np
-import os
-from RobotCar import RobotCar
-
-pygame.init()
+import networkx as nx
+import numpy as np
 
 # constants declaration
 WIDTH = 800
 ROWS = 20
-WIN = pygame.display.set_mode((WIDTH, WIDTH))
-pygame.display.set_caption("Path Finding Visualization")
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -27,10 +18,6 @@ ORANGE = (255, 165, 0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
 TEAL = (2, 253, 252)
-
-font = pygame.font.SysFont('arial.ttf', 48)
-base_path = os.path.dirname(__file__)
-car_img_path = os.path.join(base_path, "car.png")
 
 """
 Spots = Nodes = Cubes
@@ -95,14 +82,6 @@ class Spot:
     def make_start(self, start_h):
         self.heading = start_h
         self.color = ORANGE
-        if self.heading == 0:
-            print("Facing East")
-        elif self.heading == 90:
-            print("Facing North")
-        elif self.heading == 180:
-            print("Facing West")
-        elif self.heading == 270:
-            print("Facing South")
 
     def make_path(self):
         self.color = PURPLE
@@ -110,20 +89,9 @@ class Spot:
     def make_goal(self, goal_h):
         self.heading = goal_h
         self.color = TEAL
-        if self.heading == 0:
-            print("On West")
-        elif self.heading == 90:
-            print("On South")
-        elif self.heading == 180:
-            print("On East")
-        elif self.heading == 270:
-            print("On North")
 
     def start_area(self):
         self.color = YELLOW
-
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
     def update_neighbors(self, grid):
         self.neighbors = []
@@ -143,13 +111,28 @@ class Spot:
     def __lt__(self, other):
         return False
 
+def calc_TSP(node_c):
+    g1 = nx.complete_graph(len(node_c))
+
+    node_c_no_h = []
+    for x in node_c:
+        node_c_no_h.append(x[:2])
+
+    for node, node2 in g1.edges:
+        xy = np.subtract(node_c_no_h[node], node_c_no_h[node2])
+        xy = np.abs(xy)
+        xy = np.sum(xy)
+        g1[node][node2]['weight'] = xy
+    tsp_path = nx.approximation.traveling_salesman_problem(g1, weight = 'weight', cycle = True, method = nx.algorithms.approximation.traveling_salesman.greedy_tsp)
+    return tsp_path
+
 # our A* heuristic, h(x), in euclidean distance
 def h(p1, p2):
     x1, y1, h1 = p1
     x2, y2, h2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, draw, car):
+def reconstruct_path(came_from, current):
     path = []
     path_f = []
     path.append(current.get_pos())
@@ -159,7 +142,6 @@ def reconstruct_path(came_from, current, draw, car):
         path.append(current_pos)
         if not current.is_goal():
             current.make_path()
-        draw()
     
     path_r = list(reversed(path))
 
@@ -176,17 +158,20 @@ def reconstruct_path(came_from, current, draw, car):
                 cheading = 270
             elif ny < cy:
                 cheading = 90
-        path_f.append((cx, cy, cheading))
+        path_f.append(str(cx)+","+str(abs(cy-20))+","+str(cheading))
     
-    runRobotMove(path_f, car, draw)
+    return path_f
+    # runRobotMove(path_f, draw)
 
-def runRobotMove(path, car, draw):
-    print(car.theta)
+'''
+def runRobotMove(path, draw):
+    global car_dir
+    print(car_dir)
     print(path)
     straightCounter = 0
     i = 0
 
-    firstTheta = path[0][2] - car.theta
+    firstTheta = path[0][2] - car_dir
     if firstTheta == 180 or firstTheta == -180:
         carTurn180()
     elif firstTheta == 90 or firstTheta == -270:
@@ -197,19 +182,19 @@ def runRobotMove(path, car, draw):
         i = i + carTurnRight(i-1, path)
 
     coord = path[i]
-    car.set_pos((coord[0], coord[1], coord[2]))
+    car_dir = coord[2]
     draw()
     pygame.time.wait(30)
 
     while i < len(path):
         if i == len(path)-1: # last turn
             straightCounter = 0
-            firstTheta = path[i][2] - car.theta
+            firstTheta = path[i][2] - car_dir
             if firstTheta == 180 or firstTheta == -180:
                 carTurn180()
         
         if i+1 < len(path):
-            turnTheta = path[i+1][2] - car.theta
+            turnTheta = path[i+1][2] - car_dir
             if turnTheta == 0:
                 straightCounter = straightCounter + 1
             else:
@@ -222,10 +207,9 @@ def runRobotMove(path, car, draw):
                     i = i + carTurnRight(i, path)
         
         coord = path[i]
-        car.set_pos((coord[0], coord[1], coord[2]))
-        draw()
-        pygame.time.wait(30)
+        car_dir = coord[2]
         i = i + 1
+        print(straightCounter)
 
     if straightCounter != 0:
         carStraight(straightCounter)
@@ -290,8 +274,9 @@ def carTurn180():
     print("turn 180")
     # TODO ADD INSTRUCTION TO TURN 180
     return
+'''
 
-def algorithm(draw, grid, start, end, car):
+def algorithm(grid, start, end):
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # Add the start node to the priority queue
@@ -305,17 +290,11 @@ def algorithm(draw, grid, start, end, car):
     open_set_hash = {start}
 
     while not open_set.empty():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-        
         current = open_set.get()[2]
-        # print(current)
         open_set_hash.remove(current)
 
         if current == end:
-            reconstruct_path(came_from, end, draw, car)
-            return True
+            return reconstruct_path(came_from, end)
 
         for neighbor in current.neighbors:
             temp_g_score = g_score[current] + 1
@@ -330,8 +309,6 @@ def algorithm(draw, grid, start, end, car):
                     open_set_hash.add(neighbor)
                     if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_start() and not neighbor.is_close():
                         neighbor.make_open()
-
-        draw()
 
         if current != start and not current.is_path() and not current.is_goal() and not current.is_start():
             current.make_close()
@@ -351,90 +328,55 @@ def make_grid(rows, width):
 
     return grid
 
-# draw grid lines
-def draw_grid(win, rows, width):
-    gap = width // rows
-    for i in range(rows):
-        pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
-        for j in range(rows):
-            pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
-
-def draw(win, grid, rows, width, shp, gn, car):
-    win.fill(WHITE)
-
-    for row in grid:
-        for spot in row:
-            spot.draw(win)
-
-        if len(shp):
-            car_x = car.x + ((WIDTH // ROWS) / 2)
-            car_y = car.y + ((WIDTH // ROWS) / 2)
-            car_heading = car.theta
-            # print(car_heading)
-            drawn_car = car.rotate_self(car_heading)
-            drawn_car_rect = drawn_car.get_rect()
-            drawn_car_rect.center = (car_x, car_y)
-            win.blit(drawn_car, drawn_car_rect)
-
-    for x in shp:
-        text = font.render(str(x), True, BLACK)
-        textRect = text.get_rect()
-        textRect.topleft = np.array(gn[shp[x]][:2]) * (WIDTH // ROWS)
-        win.blit(text, textRect)
-
-    draw_grid(win, rows, width)
-
-    pygame.display.update()
-
-# pos == mouse position, help function
-def get_clicked_pos(pos, rows, width):
-    gap = width // rows
-    y, x = pos
-    row = y // gap
-    col = x // gap
-
-    return row, col
-
-def main(win, width):
+def visualize(width, and_inputs):
     grid = make_grid(ROWS, width)
 
     # start / end pos
     start = None
     end = None
     # have we started the algorithm
-    run = True
-    started = False
     goal_nodes = []
     shp = []
-    car = RobotCar(2.1, 3.0, car_img_path, (-100, -100, 0), (WIDTH // ROWS))
 
-    # TODO add in the inputs
-    test_input = []
+    input_for_algo = []
 
-    draw(win, grid, ROWS, width, shp, goal_nodes, car)
+    for androidInput in and_inputs:
+        coords = androidInput.split(",")
+        coords.pop(0)
+        coords[0] = int(coords[0])
+        coords[1] = abs(int(coords[1]) - 20)
+        if coords[2] == 'N':
+            coords[2] = 90
+        elif coords[2] == 'E':
+            coords[2] = 0
+        elif coords[2] == 'S':
+            coords[2] = 270
+        elif coords[2] == 'W':
+            coords[2] = 180
+        input_for_algo.append(coords)
 
     for i in range(4):
         for j in range(16, 20):
             spot = grid[i][j]
             spot.start_area()
 
-    for i in range(len(test_input)):
+    for i in range(len(input_for_algo)):
         if i == 0:
-            col, row = test_input[0][1], test_input[0][0]
+            col, row = input_for_algo[0][1], input_for_algo[0][0]
             spot = grid[row][col]
-            if test_input[0][2] == 90:
+            if input_for_algo[0][2] == 90:
                 if not start and row < 3 and col > 15:
                     start = spot
                     start.make_start(90)
                     goal_nodes.append((row, col, 90))
-            elif test_input[0][2] == 0:
+            elif input_for_algo[0][2] == 0:
                 if not start and row < 3 and col > 15:
                     start = spot
                     start.make_start(0)
                     goal_nodes.append((row, col, 0))
         else:
-            col, row = test_input[i][1], test_input[i][0]
-            if test_input[i][2] == 0:
+            col, row = input_for_algo[i][1], input_for_algo[i][0]
+            if input_for_algo[i][2] == 0:
                 for x in range(-1, 2, 1):
                     if col+x >= 0 and col+x < ROWS:
                         for y in range(-1, 2, 1):
@@ -448,8 +390,7 @@ def main(win, width):
                     if goal_nodes[len(goal_nodes)-1] != (row+4, col):
                         spot.make_goal(180)
                         goal_nodes.append((row+4, col, 180))
-                        print(goal_nodes)
-            elif test_input[i][2] == 90:
+            elif input_for_algo[i][2] == 90:
                 for x in range(-1, 2, 1):
                     if col+x >= 0 and col+x < ROWS:
                         for y in range(-1, 2, 1):
@@ -463,8 +404,7 @@ def main(win, width):
                     if goal_nodes[len(goal_nodes)-1] != (row, col-4):
                         spot.make_goal(270)
                         goal_nodes.append((row, col-4, 270))
-                        print(goal_nodes)
-            elif test_input[i][2] == 180:
+            elif input_for_algo[i][2] == 180:
                 for x in range(-1, 2, 1):
                     if col+x >= 0 and col+x < ROWS:
                         for y in range(-1, 2, 1):
@@ -478,8 +418,7 @@ def main(win, width):
                     if goal_nodes[len(goal_nodes)-1] != (row-4, col):
                         spot.make_goal(0)
                         goal_nodes.append((row-4, col, 0))
-                        print(goal_nodes)
-            elif test_input[i][2] == 270:
+            elif input_for_algo[i][2] == 270:
                 for x in range(-1, 2, 1):
                     if col+x >= 0 and col+x < ROWS:
                         for y in range(-1, 2, 1):
@@ -493,141 +432,35 @@ def main(win, width):
                     if goal_nodes[len(goal_nodes)-1] != (row, col+4):
                         spot.make_goal(90)
                         goal_nodes.append((row, col+4, 90))
-                        print(goal_nodes)
-
-    while run:
-        draw(win, grid, ROWS, width, shp, goal_nodes, car)
-
-        if not start:
-            for i in range(4):
-                for j in range(16, 20):
-                    spot = grid[i][j]
-                    spot.start_area()
-
-        for event in pygame.event.get():
-            # always check if user has quit the game first
-            if event.type == pygame.QUIT:
-                run = False
-            
-            if started:
-                continue
-            
-            # check if mouse was clicked
-            # 0 == left, 1 == middle, 2 == right mouse buttons
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    spot = grid[row][col]
-                    if not start and row < 3 and col > 15:
-                        start = spot
-                        start.make_start(0)
-                        goal_nodes.append((row, col, 0))
-                elif event.key == pygame.K_f:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    spot = grid[row][col]
-                    if not start and row < 3 and col > 15:
-                        start = spot
-                        start.make_start(90)
-                        goal_nodes.append((row, col, 90))
-            
-                elif event.key == pygame.K_w:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row][col-4]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row, col-4):
-                            spot.make_goal(270)
-                            goal_nodes.append((row, col-4, 270))
-                            print(goal_nodes)
-
-                elif event.key == pygame.K_a:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row-4][col]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row-4, col):
-                            spot.make_goal(0)
-                            goal_nodes.append((row-4, col, 0))
-                            print(goal_nodes)
 
 
-                elif event.key == pygame.K_s:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row][col+4]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row, col+4):
-                            spot.make_goal(90)
-                            goal_nodes.append((row, col+4, 90))
-                            print(goal_nodes)
+    if not start:
+        for i in range(4):
+            for j in range(16, 20):
+                spot = grid[i][j]
+                spot.start_area()
 
-                elif event.key == pygame.K_d:
-                    pos = pygame.mouse.get_pos()
-                    row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row+4][col]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row+4, col):
-                            spot.make_goal(180)
-                            goal_nodes.append((row+4, col, 180))
-                            print(goal_nodes)
+    full_path = []
+    shp = calc_TSP(goal_nodes)
+    shp2 = shp.copy()
+    shp2.pop()
+    shp3 = [str(x) for x in shp2]
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE and not started:
-                    # pass
-                    shp = calc_TSP(goal_nodes)
-                    print(goal_nodes)
-                    shp2 = shp.copy()
-                    shp2.pop()
-                    print("Index sequence:", shp2)
+    for row in grid:
+        for spot in row:
+            spot.update_neighbors(grid)
+    
+    while len(shp2) != 1:
+        n = shp2[0]
+        row, col, heading = goal_nodes[n]
+        start = grid[row][col]
+        shp2.pop(0)
+        end_node = shp2[0]
+        row, col, heading = goal_nodes[end_node]
+        end = grid[row][col]
+        full_path.append(algorithm(grid, start, end))
+    return shp3, full_path
 
-                    for row in grid:
-                        for spot in row:
-                            spot.update_neighbors(grid)
-                    
-                    while len(shp2) != 1:
-                        n = shp2[0]
-                        row, col, heading = goal_nodes[n]
-                        start = grid[row][col]
-                        shp2.pop(0)
-                        end_node = shp2[0]
-                        row, col, heading = goal_nodes[end_node]
-                        end = grid[row][col]
-                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes, car), grid, start, end, car)
-    pygame.quit()
-
-main(WIN, WIDTH)
+seq, path = visualize(WIDTH, ["0,2,2,E", "2,14,13,N", "2,7,12,W", "3,11,7,S"])
+print(seq)
+print(path)

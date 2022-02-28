@@ -1,5 +1,4 @@
 import networkx as nx
-import matplotlib
 import numpy as np
 
 def calc_TSP(node_c):
@@ -16,11 +15,3 @@ def calc_TSP(node_c):
         g1[node][node2]['weight'] = xy
     tsp_path = nx.approximation.traveling_salesman_problem(g1, weight = 'weight', cycle = True, method = nx.algorithms.approximation.traveling_salesman.greedy_tsp)
     return tsp_path
-
-
-# def main():
-#     c_list = [(2, 18, 90), (15, 3, 90), (3, 3, 90), (7, 8, 90), (14, 14, 90), (8, 15, 90)]
-#     tsp_p = calc_TSP(c_list)
-#     print(tsp_p)
-
-# main()

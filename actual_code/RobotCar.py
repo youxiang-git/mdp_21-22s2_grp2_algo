@@ -20,7 +20,6 @@ class RobotCar:
     def print_state(self):
         print(f"state is : {self.x}, {self.y}, {self.theta}")
 
-
     def rotate_self(self, angle):
         arrow_l = 50
         img_w, img_h = self.car_img.get_size()
@@ -37,14 +36,3 @@ class RobotCar:
         self.x = (pos[0] * self.d2)
         self.y = (pos[1] * self.d2)
         self.theta = pos[2]
-
-# def main():
-
-#     dist = round(math.sqrt(40 ** 2 + 40 ** 2))
-#     print("dist is " + str(dist))
-#     dist_grid = dist // 40
-#     print(dist_grid)
-
-
-
-# main()
