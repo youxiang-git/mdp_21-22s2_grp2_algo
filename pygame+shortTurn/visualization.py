@@ -1,12 +1,9 @@
-from cgi import test
-from tabnanny import check
 import pygame
-import math
 from queue import PriorityQueue
-from tsp_approx import calc_TSP
 import numpy as np
 import os
-from RobotCar import RobotCar
+import networkx as nx
+import numpy as np
 
 pygame.init()
 
@@ -27,6 +24,8 @@ ORANGE = (255, 165, 0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
 TEAL = (2, 253, 252)
+
+car_dir = 0
 
 font = pygame.font.SysFont('arial.ttf', 48)
 base_path = os.path.dirname(__file__)
@@ -143,15 +142,31 @@ class Spot:
     def __lt__(self, other):
         return False
 
+def calc_TSP(node_c):
+    g1 = nx.complete_graph(len(node_c))
+
+    node_c_no_h = []
+    for x in node_c:
+        node_c_no_h.append(x[:2])
+
+    for node, node2 in g1.edges:
+        xy = np.subtract(node_c_no_h[node], node_c_no_h[node2])
+        xy = np.abs(xy)
+        xy = np.sum(xy)
+        g1[node][node2]['weight'] = xy
+    tsp_path = nx.approximation.traveling_salesman_problem(g1, weight = 'weight', cycle = True, method = nx.algorithms.approximation.traveling_salesman.greedy_tsp)
+    return tsp_path
+
 # our A* heuristic, h(x), in euclidean distance
 def h(p1, p2):
     x1, y1, h1 = p1
     x2, y2, h2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, draw, car):
+def reconstruct_path(came_from, current, draw):
     path = []
     path_f = []
+    path_ins = []
     path.append(current.get_pos())
     while current in came_from:
         current = came_from[current]
@@ -176,122 +191,77 @@ def reconstruct_path(came_from, current, draw, car):
                 cheading = 270
             elif ny < cy:
                 cheading = 90
-        path_f.append((cx, cy, cheading))
-    
-    runRobotMove(path_f, car, draw)
+        path_ins.append((cx, cy, cheading))
+        path_f.append(str(cx)+","+str(abs(cy-20))+","+str(cheading))
+            
+    path_i = runRobotMove(path_ins, draw)
+    return path_f, path_i
 
-def runRobotMove(path, car, draw):
-    print(car.theta)
+def runRobotMove(path, draw):
+    global car_dir
+    print(car_dir)
     print(path)
+    path_i = []
     straightCounter = 0
     i = 0
 
-    firstTheta = path[0][2] - car.theta
-    if firstTheta == 180 or firstTheta == -180:
-        carTurn180()
-    elif firstTheta == 90 or firstTheta == -270:
-        carReverse(1)
-        i = i + carTurnLeft(i-1, path)
-    elif firstTheta == -90 or firstTheta == 270:
-        carReverse(1)
-        i = i + carTurnRight(i-1, path)
-
-    coord = path[i]
-    car.set_pos((coord[0], coord[1], coord[2]))
-    draw()
-    pygame.time.wait(30)
-
     while i < len(path):
-        if i == len(path)-1: # last turn
+
+        turnTheta = path[i][2] - car_dir
+        if turnTheta == 0:
+            straightCounter = straightCounter + 1
+        else:
+            if straightCounter != 0:
+                carStraight(path_i, straightCounter+1)
             straightCounter = 0
-            firstTheta = path[i][2] - car.theta
-            if firstTheta == 180 or firstTheta == -180:
-                carTurn180()
-        
-        if i+1 < len(path):
-            turnTheta = path[i+1][2] - car.theta
-            if turnTheta == 0:
-                straightCounter = straightCounter + 1
-            else:
-                if straightCounter != 0:
-                    carStraight(straightCounter)
-                straightCounter = 0
-                if turnTheta == 90 or turnTheta == -270:
-                    i = i + carTurnLeft(i, path)
-                elif turnTheta == -90 or turnTheta == 270:
-                    i = i + carTurnRight(i, path)
-        
-        coord = path[i]
-        car.set_pos((coord[0], coord[1], coord[2]))
+            if turnTheta == 180 or turnTheta == -180:
+                carTurn180(path_i)
+            elif turnTheta == 90 or turnTheta == -270:
+                carPointTurnLeft(path_i)
+            elif turnTheta == -90 or turnTheta == 270:
+                carPointTurnRight(path_i)
+
+        car_dir = path[i][2]
         draw()
         pygame.time.wait(30)
         i = i + 1
-
+    
     if straightCounter != 0:
-        carStraight(straightCounter)
+        carStraight(path_i, straightCounter)
 
-    return
+    return path_i
 
-def carReverse(n):
-    print("reverse for", n)
-    # TODO ADD INSTRUCTION TO REVERSE n*10 cm
-    return
-
-def carStraight(n):
+def carStraight(path_i, n):
     print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
+    path_i.append("1"+str(n))
     return
 
-def carTurnRight(index, path):
-    print("turn right")
-    # TODO ADD INSTRUCTION TO GO TURN RIGHT
-    # TODO CHECK IF NEED GO BACK
-    count = 0
-    if index+1 < len(path):
-        dir = path[index+1][2]
-        
-        for i in range(2, 6):
-            checkingIndex = index + i
-            if checkingIndex < len(path):
-                if path[checkingIndex][2] == dir:
-                    count = count + 1
-                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
-                    count = count + 1
-                    break
-                else:
-                    break
-        if 4-count != 0:
-            carReverse(4-count)
-    return count
+def carReverse(path_i, n):
+    print("reverse for", n)
+    # TODO ADD INSTRUCTION TO REVERSE n*10 cm
+    path_i.append("2"+str(n))
+    return
 
-def carTurnLeft(index, path):
-    print("turn left")
-    # TODO ADD INSTRUCTION TO GO TURN LEFT
-    # TODO CHECK IF NEED GO BACK
-    count = 0
-    if index+1 < len(path):
-        dir = path[index+1][2]
+def carPointTurnLeft(path_i):
+    print("point turn left")
+    # TODO ADD INSTRUCTION TO POINT TURN LEFT
+    path_i.append("60")
+    return
 
-        for i in range(2, 6):
-            checkingIndex = index + i
-            if checkingIndex < len(path):
-                if path[checkingIndex][2] == dir:
-                    count = count + 1
-                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
-                    count = count + 1
-                    break
-                else:
-                    break
-        if 4-count != 0:
-            carReverse(4-count)
-    return count
+def carPointTurnRight(path_i):
+    print("point turn right")
+    # TODO ADD INSTRUCTION TO POINT TURN RIGHT
+    path_i.append("70")
+    return
 
-def carTurn180():
+def carTurn180(path_i):
     print("turn 180")
     # TODO ADD INSTRUCTION TO TURN 180
+    path_i.append("50")
     return
 
-def algorithm(draw, grid, start, end, car):
+def algorithm(draw, grid, start, end):
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start)) # Add the start node to the priority queue
@@ -314,8 +284,7 @@ def algorithm(draw, grid, start, end, car):
         open_set_hash.remove(current)
 
         if current == end:
-            reconstruct_path(came_from, end, draw, car)
-            return True
+            return reconstruct_path(came_from, end, draw)
 
         for neighbor in current.neighbors:
             temp_g_score = g_score[current] + 1
@@ -359,22 +328,12 @@ def draw_grid(win, rows, width):
         for j in range(rows):
             pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
 
-def draw(win, grid, rows, width, shp, gn, car):
+def draw(win, grid, rows, width, shp, gn):
     win.fill(WHITE)
 
     for row in grid:
         for spot in row:
             spot.draw(win)
-
-        if len(shp):
-            car_x = car.x + ((WIDTH // ROWS) / 2)
-            car_y = car.y + ((WIDTH // ROWS) / 2)
-            car_heading = car.theta
-            # print(car_heading)
-            drawn_car = car.rotate_self(car_heading)
-            drawn_car_rect = drawn_car.get_rect()
-            drawn_car_rect.center = (car_x, car_y)
-            win.blit(drawn_car, drawn_car_rect)
 
     for x in shp:
         text = font.render(str(x), True, BLACK)
@@ -406,12 +365,12 @@ def main(win, width):
     started = False
     goal_nodes = []
     shp = []
-    car = RobotCar(2.1, 3.0, car_img_path, (-100, -100, 0), (WIDTH // ROWS))
+    global car_dir
 
     # TODO add in the inputs
     test_input = []
 
-    draw(win, grid, ROWS, width, shp, goal_nodes, car)
+    draw(win, grid, ROWS, width, shp, goal_nodes)
 
     for i in range(4):
         for j in range(16, 20):
@@ -420,15 +379,18 @@ def main(win, width):
 
     for i in range(len(test_input)):
         if i == 0:
+            global car_dir
             col, row = test_input[0][1], test_input[0][0]
             spot = grid[row][col]
             if test_input[0][2] == 90:
                 if not start and row < 3 and col > 15:
+                    car_dir = 90
                     start = spot
                     start.make_start(90)
                     goal_nodes.append((row, col, 90))
             elif test_input[0][2] == 0:
                 if not start and row < 3 and col > 15:
+                    car_dir = 0
                     start = spot
                     start.make_start(0)
                     goal_nodes.append((row, col, 0))
@@ -496,7 +458,7 @@ def main(win, width):
                         print(goal_nodes)
 
     while run:
-        draw(win, grid, ROWS, width, shp, goal_nodes, car)
+        draw(win, grid, ROWS, width, shp, goal_nodes)
 
         if not start:
             for i in range(4):
@@ -521,6 +483,7 @@ def main(win, width):
                     row, col = get_clicked_pos(pos, ROWS, width)
                     spot = grid[row][col]
                     if not start and row < 3 and col > 15:
+                        car_dir = 0
                         start = spot
                         start.make_start(0)
                         goal_nodes.append((row, col, 0))
@@ -529,6 +492,7 @@ def main(win, width):
                     row, col = get_clicked_pos(pos, ROWS, width)
                     spot = grid[row][col]
                     if not start and row < 3 and col > 15:
+                        car_dir = 90
                         start = spot
                         start.make_start(90)
                         goal_nodes.append((row, col, 90))
@@ -608,9 +572,13 @@ def main(win, width):
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
+                    # to translate to android input
+                    and_input = []
+                    for i in range(len(goal_nodes)):
+                        and_input.append(str(i)+","+str(goal_nodes[i][0])+","+str(abs(goal_nodes[i][1]-20))+","+str(goal_nodes[i][2]))
+                    print("Android input:", and_input)
                     # pass
                     shp = calc_TSP(goal_nodes)
-                    print(goal_nodes)
                     shp2 = shp.copy()
                     shp2.pop()
                     print("Index sequence:", shp2)
@@ -627,7 +595,9 @@ def main(win, width):
                         end_node = shp2[0]
                         row, col, heading = goal_nodes[end_node]
                         end = grid[row][col]
-                        algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes, car), grid, start, end, car)
+                        input_f, input_i = algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes), grid, start, end)
+                        print(input_f)
+                        print(input_i)
     pygame.quit()
 
 main(WIN, WIDTH)

@@ -19,6 +19,8 @@ GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
 TEAL = (2, 253, 252)
 
+car_dir = 0
+
 """
 Spots = Nodes = Cubes
 This is to keep track of our grid, the node's color and the coordinates it actually is at
@@ -135,6 +137,7 @@ def h(p1, p2):
 def reconstruct_path(came_from, current):
     path = []
     path_f = []
+    path_ins = []
     path.append(current.get_pos())
     while current in came_from:
         current = came_from[current]
@@ -158,40 +161,42 @@ def reconstruct_path(came_from, current):
                 cheading = 270
             elif ny < cy:
                 cheading = 90
+        path_ins.append((cx, cy, cheading))
         path_f.append(str(cx)+","+str(abs(cy-20))+","+str(cheading))
     
-    return path_f
-    # runRobotMove(path_f, draw)
+    path_i = runRobotMove(path_ins)
+    # path_i = runRobotMovePointTurn(path_ins)
+    return path_f, path_i
 
-'''
-def runRobotMove(path, draw):
+def runRobotMove(path):
     global car_dir
     print(car_dir)
     print(path)
+    path_i = []
     straightCounter = 0
     i = 0
 
     firstTheta = path[0][2] - car_dir
     if firstTheta == 180 or firstTheta == -180:
-        carTurn180()
+        carTurn180(path_i)
     elif firstTheta == 90 or firstTheta == -270:
-        carReverse(1)
-        i = i + carTurnLeft(i-1, path)
+        carReverse(path_i, 1)
+        i = i + carTurnLeft(path_i, i-1, path)
     elif firstTheta == -90 or firstTheta == 270:
-        carReverse(1)
-        i = i + carTurnRight(i-1, path)
+        carReverse(path_i, 1)
+        i = i + carTurnRight(path_i, i-1, path)
 
-    coord = path[i]
-    car_dir = coord[2]
-    draw()
-    pygame.time.wait(30)
+    car_dir = path[i][2]
 
     while i < len(path):
         if i == len(path)-1: # last turn
+            if straightCounter != 0:
+                carStraight(path_i, straightCounter)
             straightCounter = 0
-            firstTheta = path[i][2] - car_dir
-            if firstTheta == 180 or firstTheta == -180:
-                carTurn180()
+            lastTheta = path[i][2] - path[i-1][2]
+            if lastTheta == 180 or lastTheta == -180:
+                carTurn180(path_i)
+            break
         
         if i+1 < len(path):
             turnTheta = path[i+1][2] - car_dir
@@ -199,36 +204,89 @@ def runRobotMove(path, draw):
                 straightCounter = straightCounter + 1
             else:
                 if straightCounter != 0:
-                    carStraight(straightCounter)
+                    carStraight(path_i, straightCounter)
                 straightCounter = 0
                 if turnTheta == 90 or turnTheta == -270:
-                    i = i + carTurnLeft(i, path)
+                    i = i + carTurnLeft(path_i, i, path)
                 elif turnTheta == -90 or turnTheta == 270:
-                    i = i + carTurnRight(i, path)
+                    i = i + carTurnRight(path_i, i, path)
         
-        coord = path[i]
-        car_dir = coord[2]
         i = i + 1
-        print(straightCounter)
+        car_dir = path[i][2]
 
+    return path_i
+
+def runRobotMovePointTurn(path):
+    global car_dir
+    print(car_dir)
+    print(path)
+    path_i = []
+    straightCounter = 0
+    i = 0
+
+    while i < len(path):
+
+        turnTheta = path[i][2] - car_dir
+        if turnTheta == 0:
+            straightCounter = straightCounter + 1
+        else:
+            if straightCounter != 0:
+                carStraight(path_i, straightCounter+1)
+            straightCounter = 0
+            if turnTheta == 180 or turnTheta == -180:
+                carTurn180(path_i)
+            elif turnTheta == 90 or turnTheta == -270:
+                carPointTurnLeft(path_i)
+            elif turnTheta == -90 or turnTheta == 270:
+                carPointTurnRight(path_i)
+
+        car_dir = path[i][2]
+        i = i + 1
+    
     if straightCounter != 0:
-        carStraight(straightCounter)
+        carStraight(path_i, straightCounter)
 
-    return
+    return path_i
 
-def carReverse(n):
-    print("reverse for", n)
-    # TODO ADD INSTRUCTION TO REVERSE n*10 cm
-    return
-
-def carStraight(n):
+def carStraight(path_i, n):
     print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
+    path_i.append("1"+str(n))
     return
 
-def carTurnRight(index, path):
+def carReverse(path_i, n):
+    print("reverse for", n)
+    # TODO ADD INSTRUCTION TO REVERSE n*10 cm
+    path_i.append("2"+str(n))
+    return
+
+def carTurnLeft(path_i, index, path):
+    print("turn left")
+    # TODO ADD INSTRUCTION TO GO TURN LEFT
+    path_i.append("30")
+    # TODO CHECK IF NEED GO BACK
+    count = 0
+    if index+1 < len(path):
+        dir = path[index+1][2]
+
+        for i in range(2, 6):
+            checkingIndex = index + i
+            if checkingIndex < len(path):
+                if path[checkingIndex][2] == dir:
+                    count = count + 1
+                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
+                    count = count + 1
+                    break
+                else:
+                    break
+        if 4-count != 0:
+            carReverse(path_i, 4-count)
+    return count
+
+def carTurnRight(path_i, index, path):
     print("turn right")
     # TODO ADD INSTRUCTION TO GO TURN RIGHT
+    path_i.append("40")
     # TODO CHECK IF NEED GO BACK
     count = 0
     if index+1 < len(path):
@@ -245,36 +303,26 @@ def carTurnRight(index, path):
                 else:
                     break
         if 4-count != 0:
-            carReverse(4-count)
+            carReverse(path_i, 4-count)
     return count
 
-def carTurnLeft(index, path):
-    print("turn left")
-    # TODO ADD INSTRUCTION TO GO TURN LEFT
-    # TODO CHECK IF NEED GO BACK
-    count = 0
-    if index+1 < len(path):
-        dir = path[index+1][2]
-
-        for i in range(2, 6):
-            checkingIndex = index + i
-            if checkingIndex < len(path):
-                if path[checkingIndex][2] == dir:
-                    count = count + 1
-                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
-                    count = count + 1
-                    break
-                else:
-                    break
-        if 4-count != 0:
-            carReverse(4-count)
-    return count
-
-def carTurn180():
+def carTurn180(path_i):
     print("turn 180")
     # TODO ADD INSTRUCTION TO TURN 180
+    path_i.append("50")
     return
-'''
+
+def carPointTurnLeft(path_i):
+    print("point turn left")
+    # TODO ADD INSTRUCTION TO POINT TURN LEFT
+    path_i.append("60")
+    return
+
+def carPointTurnRight(path_i):
+    print("point turn right")
+    # TODO ADD INSTRUCTION TO POINT TURN RIGHT
+    path_i.append("70")
+    return
 
 def algorithm(grid, start, end):
     count = 0
@@ -328,8 +376,8 @@ def make_grid(rows, width):
 
     return grid
 
-def visualize(width, and_inputs):
-    grid = make_grid(ROWS, width)
+def visualize(and_inputs):
+    grid = make_grid(ROWS, WIDTH)
 
     # start / end pos
     start = None
@@ -337,6 +385,7 @@ def visualize(width, and_inputs):
     # have we started the algorithm
     goal_nodes = []
     shp = []
+    global car_dir
 
     input_for_algo = []
 
@@ -366,11 +415,13 @@ def visualize(width, and_inputs):
             spot = grid[row][col]
             if input_for_algo[0][2] == 90:
                 if not start and row < 3 and col > 15:
+                    car_dir = 90
                     start = spot
                     start.make_start(90)
                     goal_nodes.append((row, col, 90))
             elif input_for_algo[0][2] == 0:
                 if not start and row < 3 and col > 15:
+                    car_dir = 0
                     start = spot
                     start.make_start(0)
                     goal_nodes.append((row, col, 0))
@@ -441,6 +492,7 @@ def visualize(width, and_inputs):
                 spot.start_area()
 
     full_path = []
+    full_ins = []
     shp = calc_TSP(goal_nodes)
     shp2 = shp.copy()
     shp2.pop()
@@ -458,9 +510,12 @@ def visualize(width, and_inputs):
         end_node = shp2[0]
         row, col, heading = goal_nodes[end_node]
         end = grid[row][col]
-        full_path.append(algorithm(grid, start, end))
-    return shp3, full_path
+        input_f, input_i = algorithm(grid, start, end)
+        full_path.append(input_f)
+        full_ins.append(input_i)
+    return shp3, full_path, full_ins
 
-seq, path = visualize(WIDTH, ["0,2,2,E", "2,14,13,N", "2,7,12,W", "3,11,7,S"])
+seq, path, ins = visualize(["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
 print(seq)
 print(path)
+print(ins)
