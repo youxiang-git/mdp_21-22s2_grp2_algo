@@ -169,8 +169,6 @@ def reconstruct_path(came_from, current):
 
 def runRobotMove(path):
     global car_dir
-    print(car_dir)
-    print(path)
     path_i = []
     straightCounter = 0
     i = 0
@@ -202,31 +200,26 @@ def runRobotMove(path):
     return path_i
 
 def carStraight(path_i, n):
-    print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
     path_i.append("1"+numToLetter(n))
     return
 
 def carReverse(path_i, n):
-    print("reverse for", n)
     # TODO ADD INSTRUCTION TO REVERSE n*10 cm
     path_i.append("2"+numToLetter(n))
     return
 
 def carPointTurnLeft(path_i):
-    print("point turn left")
     # TODO ADD INSTRUCTION TO POINT TURN LEFT
     path_i.append("30")
     return
 
 def carPointTurnRight(path_i):
-    print("point turn right")
     # TODO ADD INSTRUCTION TO POINT TURN RIGHT
     path_i.append("40")
     return
 
 def carTurn180(path_i):
-    print("turn 180")
     # TODO ADD INSTRUCTION TO TURN 180
     path_i.append("50")
     return
@@ -306,6 +299,7 @@ def visualize(and_inputs):
 
     input_for_algo = []
 
+    # translating input from android to algo-friendly inputs
     for androidInput in and_inputs:
         coords = androidInput.split(",")
         coords.pop(0)
@@ -320,11 +314,6 @@ def visualize(and_inputs):
         elif coords[2] == 'W':
             coords[2] = 180
         input_for_algo.append(coords)
-
-    for i in range(4):
-        for j in range(16, 20):
-            spot = grid[i][j]
-            spot.start_area()
 
     for i in range(len(input_for_algo)):
         if i == 0:
@@ -401,18 +390,12 @@ def visualize(and_inputs):
                         spot.make_goal(90)
                         goal_nodes.append((row, col+4, 90))
 
-
-    if not start:
-        for i in range(4):
-            for j in range(16, 20):
-                spot = grid[i][j]
-                spot.start_area()
-
     full_path = []
     full_ins = []
     shp = calc_TSP(goal_nodes)
     shp2 = shp.copy()
     shp2.pop()
+    # index sequence for rpi
     shp3 = [str(x) for x in shp2]
 
     for row in grid:
@@ -423,10 +406,12 @@ def visualize(and_inputs):
         n = shp2[0]
         row, col, heading = goal_nodes[n]
         start = grid[row][col]
+        start.make_goal(heading)
         shp2.pop(0)
         end_node = shp2[0]
         row, col, heading = goal_nodes[end_node]
         end = grid[row][col]
+        end.make_goal(heading)
         input_f, input_i = algorithm(grid, start, end)
         full_path.append(input_f)
         full_ins.append(input_i)

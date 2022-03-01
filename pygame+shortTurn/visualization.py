@@ -109,14 +109,6 @@ class Spot:
     def make_goal(self, goal_h):
         self.heading = goal_h
         self.color = TEAL
-        if self.heading == 0:
-            print("On West")
-        elif self.heading == 90:
-            print("On South")
-        elif self.heading == 180:
-            print("On East")
-        elif self.heading == 270:
-            print("On North")
 
     def start_area(self):
         self.color = YELLOW
@@ -291,7 +283,6 @@ def algorithm(draw, grid, start, end):
                 pygame.quit()
         
         current = open_set.get()[2]
-        # print(current)
         open_set_hash.remove(current)
 
         if current == end:
@@ -378,9 +369,6 @@ def main(win, width):
     shp = []
     global car_dir
 
-    # TODO add in the inputs
-    test_input = []
-
     draw(win, grid, ROWS, width, shp, goal_nodes)
 
     for i in range(4):
@@ -388,85 +376,14 @@ def main(win, width):
             spot = grid[i][j]
             spot.start_area()
 
-    for i in range(len(test_input)):
-        if i == 0:
-            global car_dir
-            col, row = test_input[0][1], test_input[0][0]
-            spot = grid[row][col]
-            if test_input[0][2] == 90:
-                if not start and row < 3 and col > 15:
-                    car_dir = 90
-                    start = spot
-                    start.make_start(90)
-                    goal_nodes.append((row, col, 90))
-            elif test_input[0][2] == 0:
-                if not start and row < 3 and col > 15:
-                    car_dir = 0
-                    start = spot
-                    start.make_start(0)
-                    goal_nodes.append((row, col, 0))
-        else:
-            col, row = test_input[i][1], test_input[i][0]
-            if test_input[i][2] == 0:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row+4][col]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row+4, col):
-                        spot.make_goal(180)
-                        goal_nodes.append((row+4, col, 180))
-                        print(goal_nodes)
-            elif test_input[i][2] == 90:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row][col-4]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row, col-4):
-                        spot.make_goal(270)
-                        goal_nodes.append((row, col-4, 270))
-                        print(goal_nodes)
-            elif test_input[i][2] == 180:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row-4][col]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row-4, col):
-                        spot.make_goal(0)
-                        goal_nodes.append((row-4, col, 0))
-                        print(goal_nodes)
-            elif test_input[i][2] == 270:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row][col+4]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row, col+4):
-                        spot.make_goal(90)
-                        goal_nodes.append((row, col+4, 90))
-                        print(goal_nodes)
+    '''
+    for i in (0, 19):
+        for j in range(20):
+            spot = grid[i][j]
+            spot.make_obstacle_light()
+            spot = grid[j][i]
+            spot.make_obstacle_light()
+    '''
 
     while run:
         draw(win, grid, ROWS, width, shp, goal_nodes)
@@ -524,7 +441,6 @@ def main(win, width):
                         if goal_nodes[len(goal_nodes)-1] != (row, col-4):
                             spot.make_goal(270)
                             goal_nodes.append((row, col-4, 270))
-                            print(goal_nodes)
 
                 elif event.key == pygame.K_a:
                     pos = pygame.mouse.get_pos()
@@ -542,8 +458,6 @@ def main(win, width):
                         if goal_nodes[len(goal_nodes)-1] != (row-4, col):
                             spot.make_goal(0)
                             goal_nodes.append((row-4, col, 0))
-                            print(goal_nodes)
-
 
                 elif event.key == pygame.K_s:
                     pos = pygame.mouse.get_pos()
@@ -561,7 +475,6 @@ def main(win, width):
                         if goal_nodes[len(goal_nodes)-1] != (row, col+4):
                             spot.make_goal(90)
                             goal_nodes.append((row, col+4, 90))
-                            print(goal_nodes)
 
                 elif event.key == pygame.K_d:
                     pos = pygame.mouse.get_pos()
@@ -579,16 +492,11 @@ def main(win, width):
                         if goal_nodes[len(goal_nodes)-1] != (row+4, col):
                             spot.make_goal(180)
                             goal_nodes.append((row+4, col, 180))
-                            print(goal_nodes)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
-                    # to translate to android input
-                    and_input = []
-                    for i in range(len(goal_nodes)):
-                        and_input.append(str(i)+","+str(goal_nodes[i][0])+","+str(abs(goal_nodes[i][1]-20))+","+str(goal_nodes[i][2]))
-                    print("Android input:", and_input)
                     # pass
+                    print("Goal nodes:", goal_nodes)
                     shp = calc_TSP(goal_nodes)
                     shp2 = shp.copy()
                     shp2.pop()
@@ -602,13 +510,15 @@ def main(win, width):
                         n = shp2[0]
                         row, col, heading = goal_nodes[n]
                         start = grid[row][col]
+                        start.make_goal(heading)
                         shp2.pop(0)
                         end_node = shp2[0]
                         row, col, heading = goal_nodes[end_node]
                         end = grid[row][col]
+                        end.make_goal(heading)
                         input_f, input_i = algorithm(lambda: draw(win, grid, ROWS, width, shp, goal_nodes), grid, start, end)
-                        print(input_f)
-                        print(input_i)
+                        print("Path for rpi:", input_f)
+                        print("Instructions for rpi:", input_i)
     pygame.quit()
 
 main(WIN, WIDTH)
