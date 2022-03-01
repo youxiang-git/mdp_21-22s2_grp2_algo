@@ -212,7 +212,7 @@ def runRobotMove(path, draw):
             straightCounter = straightCounter + 1
         else:
             if straightCounter != 0:
-                carStraight(path_i, straightCounter+1)
+                carStraight(path_i, straightCounter)
             straightCounter = 0
             if turnTheta == 180 or turnTheta == -180:
                 carTurn180(path_i)
@@ -220,10 +220,11 @@ def runRobotMove(path, draw):
                 carPointTurnLeft(path_i)
             elif turnTheta == -90 or turnTheta == 270:
                 carPointTurnRight(path_i)
+            if i != len(path)-1:
+                straightCounter = straightCounter + 1
 
         car_dir = path[i][2]
         draw()
-        pygame.time.wait(30)
         i = i + 1
     
     if straightCounter != 0:
@@ -234,25 +235,25 @@ def runRobotMove(path, draw):
 def carStraight(path_i, n):
     print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
-    path_i.append("1"+str(n))
+    path_i.append("1"+numToLetter(n))
     return
 
 def carReverse(path_i, n):
     print("reverse for", n)
     # TODO ADD INSTRUCTION TO REVERSE n*10 cm
-    path_i.append("2"+str(n))
+    path_i.append("2"+numToLetter(n))
     return
 
 def carPointTurnLeft(path_i):
     print("point turn left")
     # TODO ADD INSTRUCTION TO POINT TURN LEFT
-    path_i.append("60")
+    path_i.append("30")
     return
 
 def carPointTurnRight(path_i):
     print("point turn right")
     # TODO ADD INSTRUCTION TO POINT TURN RIGHT
-    path_i.append("70")
+    path_i.append("40")
     return
 
 def carTurn180(path_i):
@@ -260,6 +261,16 @@ def carTurn180(path_i):
     # TODO ADD INSTRUCTION TO TURN 180
     path_i.append("50")
     return
+
+def numToLetter(num):
+    options = {1 : "A", 2 : "B", 3 : "C",
+            4 : "D", 5 : "E", 6 : "F",
+            7 : "G", 8 : "H", 9 : "I",
+            10 : "J", 11 : "K", 12 : "L",
+            13 : "M", 14 : "N", 15 : "O",
+            16 : "P", 17 : "Q", 18 : "R",
+            19 : "S", 20 : "T"}
+    return options[num]
 
 def algorithm(draw, grid, start, end):
     count = 0

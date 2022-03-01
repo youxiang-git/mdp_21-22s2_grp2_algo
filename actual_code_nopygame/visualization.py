@@ -165,58 +165,9 @@ def reconstruct_path(came_from, current):
         path_f.append(str(cx)+","+str(abs(cy-20))+","+str(cheading))
     
     path_i = runRobotMove(path_ins)
-    # path_i = runRobotMovePointTurn(path_ins)
     return path_f, path_i
 
 def runRobotMove(path):
-    global car_dir
-    print(car_dir)
-    print(path)
-    path_i = []
-    straightCounter = 0
-    i = 0
-
-    firstTheta = path[0][2] - car_dir
-    if firstTheta == 180 or firstTheta == -180:
-        carTurn180(path_i)
-    elif firstTheta == 90 or firstTheta == -270:
-        carReverse(path_i, 1)
-        i = i + carTurnLeft(path_i, i-1, path)
-    elif firstTheta == -90 or firstTheta == 270:
-        carReverse(path_i, 1)
-        i = i + carTurnRight(path_i, i-1, path)
-
-    car_dir = path[i][2]
-
-    while i < len(path):
-        if i == len(path)-1: # last turn
-            if straightCounter != 0:
-                carStraight(path_i, straightCounter)
-            straightCounter = 0
-            lastTheta = path[i][2] - path[i-1][2]
-            if lastTheta == 180 or lastTheta == -180:
-                carTurn180(path_i)
-            break
-        
-        if i+1 < len(path):
-            turnTheta = path[i+1][2] - car_dir
-            if turnTheta == 0:
-                straightCounter = straightCounter + 1
-            else:
-                if straightCounter != 0:
-                    carStraight(path_i, straightCounter)
-                straightCounter = 0
-                if turnTheta == 90 or turnTheta == -270:
-                    i = i + carTurnLeft(path_i, i, path)
-                elif turnTheta == -90 or turnTheta == 270:
-                    i = i + carTurnRight(path_i, i, path)
-        
-        i = i + 1
-        car_dir = path[i][2]
-
-    return path_i
-
-def runRobotMovePointTurn(path):
     global car_dir
     print(car_dir)
     print(path)
@@ -231,7 +182,7 @@ def runRobotMovePointTurn(path):
             straightCounter = straightCounter + 1
         else:
             if straightCounter != 0:
-                carStraight(path_i, straightCounter+1)
+                carStraight(path_i, straightCounter)
             straightCounter = 0
             if turnTheta == 180 or turnTheta == -180:
                 carTurn180(path_i)
@@ -239,6 +190,8 @@ def runRobotMovePointTurn(path):
                 carPointTurnLeft(path_i)
             elif turnTheta == -90 or turnTheta == 270:
                 carPointTurnRight(path_i)
+            if i != len(path)-1:
+                straightCounter = straightCounter + 1
 
         car_dir = path[i][2]
         i = i + 1
@@ -251,60 +204,26 @@ def runRobotMovePointTurn(path):
 def carStraight(path_i, n):
     print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
-    path_i.append("1"+str(n))
+    path_i.append("1"+numToLetter(n))
     return
 
 def carReverse(path_i, n):
     print("reverse for", n)
     # TODO ADD INSTRUCTION TO REVERSE n*10 cm
-    path_i.append("2"+str(n))
+    path_i.append("2"+numToLetter(n))
     return
 
-def carTurnLeft(path_i, index, path):
-    print("turn left")
-    # TODO ADD INSTRUCTION TO GO TURN LEFT
+def carPointTurnLeft(path_i):
+    print("point turn left")
+    # TODO ADD INSTRUCTION TO POINT TURN LEFT
     path_i.append("30")
-    # TODO CHECK IF NEED GO BACK
-    count = 0
-    if index+1 < len(path):
-        dir = path[index+1][2]
+    return
 
-        for i in range(2, 6):
-            checkingIndex = index + i
-            if checkingIndex < len(path):
-                if path[checkingIndex][2] == dir:
-                    count = count + 1
-                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
-                    count = count + 1
-                    break
-                else:
-                    break
-        if 4-count != 0:
-            carReverse(path_i, 4-count)
-    return count
-
-def carTurnRight(path_i, index, path):
-    print("turn right")
-    # TODO ADD INSTRUCTION TO GO TURN RIGHT
+def carPointTurnRight(path_i):
+    print("point turn right")
+    # TODO ADD INSTRUCTION TO POINT TURN RIGHT
     path_i.append("40")
-    # TODO CHECK IF NEED GO BACK
-    count = 0
-    if index+1 < len(path):
-        dir = path[index+1][2]
-        
-        for i in range(2, 6):
-            checkingIndex = index + i
-            if checkingIndex < len(path):
-                if path[checkingIndex][2] == dir:
-                    count = count + 1
-                elif path[checkingIndex][2] - dir == 180 or path[checkingIndex][2] - dir == -180:
-                    count = count + 1
-                    break
-                else:
-                    break
-        if 4-count != 0:
-            carReverse(path_i, 4-count)
-    return count
+    return
 
 def carTurn180(path_i):
     print("turn 180")
@@ -312,17 +231,15 @@ def carTurn180(path_i):
     path_i.append("50")
     return
 
-def carPointTurnLeft(path_i):
-    print("point turn left")
-    # TODO ADD INSTRUCTION TO POINT TURN LEFT
-    path_i.append("60")
-    return
-
-def carPointTurnRight(path_i):
-    print("point turn right")
-    # TODO ADD INSTRUCTION TO POINT TURN RIGHT
-    path_i.append("70")
-    return
+def numToLetter(num):
+    options = {1 : "A", 2 : "B", 3 : "C",
+            4 : "D", 5 : "E", 6 : "F",
+            7 : "G", 8 : "H", 9 : "I",
+            10 : "J", 11 : "K", 12 : "L",
+            13 : "M", 14 : "N", 15 : "O",
+            16 : "P", 17 : "Q", 18 : "R",
+            19 : "S", 20 : "T"}
+    return options[num]
 
 def algorithm(grid, start, end):
     count = 0

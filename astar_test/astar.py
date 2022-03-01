@@ -231,7 +231,7 @@ def runRobotMove(path, draw):
         
         if i+1 < len(path):
             turnTheta = path[i+1][2] - car_dir
-            if turnTheta == 0 or turnTheta == 180 or turnTheta == -180:
+            if turnTheta == 0:
                 straightCounter = straightCounter + 1
             else:
                 if straightCounter != 0:
@@ -250,13 +250,13 @@ def runRobotMove(path, draw):
 def carStraight(path_i, n):
     print("straight for", n)
     # TODO ADD INSTRUCTION TO GO FORWARD n*10 cm
-    path_i.append("1"+numToLetter(n))
+    path_i.append("1"+str(n))
     return
 
 def carReverse(path_i, n):
     print("reverse for", n)
     # TODO ADD INSTRUCTION TO REVERSE n*10 cm
-    path_i.append("2"+numToLetter(n))
+    path_i.append("2"+str(n))
     return
 
 def carTurnLeft(path_i, index, path):
@@ -311,16 +311,6 @@ def carTurn180(path_i):
     path_i.append("50")
     return
 
-def numToLetter(num):
-    options = {1 : "A", 2 : "B", 3 : "C",
-            4 : "D", 5 : "E", 6 : "F",
-            7 : "G", 8 : "H", 9 : "I",
-            10 : "J", 11 : "K", 12 : "L",
-            13 : "M", 14 : "N", 15 : "O",
-            16 : "P", 17 : "Q", 18 : "R",
-            19 : "S", 20 : "T"}
-    return options[num]
-
 def algorithm(draw, grid, start, end):
     count = 0
     open_set = PriorityQueue()
@@ -340,10 +330,10 @@ def algorithm(draw, grid, start, end):
                 pygame.quit()
         
         current = open_set.get()[2]
+        # print(current)
         open_set_hash.remove(current)
 
         if current == end:
-            # print("END:", end.get_pos())
             return reconstruct_path(came_from, end, draw)
 
         for neighbor in current.neighbors:
@@ -436,15 +426,6 @@ def main(win, width):
         for j in range(16, 20):
             spot = grid[i][j]
             spot.start_area()
-    
-    '''
-    for i in (0, 19):
-        for j in range(20):
-            spot = grid[i][j]
-            spot.make_obstacle_light()
-            spot = grid[j][i]
-            spot.make_obstacle_light()
-    '''
 
     for i in range(len(test_input)):
         if i == 0:
