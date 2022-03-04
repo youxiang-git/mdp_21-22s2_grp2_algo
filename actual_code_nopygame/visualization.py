@@ -286,6 +286,54 @@ def make_grid(rows, width):
 
     return grid
 
+def create_avoidance_area(row, col, grid, goal_nodes):
+    reset_nodes = []
+    for x in range(-1, 2, 1):
+        if col+x >= 0 and col+x < ROWS:
+            for y in range(-1, 2, 1):
+                if row+y >= 0 and row+y < ROWS:
+                    if grid[row+y][col+x].is_goal() == True:
+                        for node in goal_nodes:
+                            if node[0] == row+y and node[1] == col+x:
+                                reset_nodes.append(node)
+                    spot = grid[row+y][col+x]
+                    spot.make_obstacle_light()
+    spot = grid[row][col]
+    spot.make_obstacle()
+
+    # find for overlapped goal node
+    for node in reset_nodes:
+        row = node[0]
+        col = node[1]
+        direction = node[2]
+        goal_nodes.remove(node)
+        for increment in range(0, 3):
+            if direction == 0:
+                spot = grid[row+increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(0)
+                    goal_nodes.append((row+increment, col, 0))
+                    break
+            elif direction == 90:
+                spot = grid[row][col-increment]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(90)
+                    goal_nodes.append((row, col-increment, 90))
+                    break
+            elif direction == 180:
+                spot = grid[row-increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(180)
+                    goal_nodes.append((row-increment, col, 180))
+                    break
+            elif direction == 270:
+                spot = grid[row][col+increment]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(270)
+                    goal_nodes.append((row, col+increment, 270))
+                    break
+    return
+
 def visualize(and_inputs):
     grid = make_grid(ROWS, WIDTH)
 
@@ -298,6 +346,19 @@ def visualize(and_inputs):
     global car_dir
 
     input_for_algo = []
+
+    for i in range(4):
+        for j in range(16, 20):
+            spot = grid[i][j]
+            spot.start_area()
+
+    # border avoidance zone
+    for i in (0, 19):
+        for j in range(20):
+            spot = grid[i][j]
+            spot.make_obstacle_light()
+            spot = grid[j][i]
+            spot.make_obstacle_light()
 
     # translating input from android to algo-friendly inputs
     for androidInput in and_inputs:
@@ -333,62 +394,46 @@ def visualize(and_inputs):
                     goal_nodes.append((row, col, 0))
         else:
             col, row = input_for_algo[i][1], input_for_algo[i][0]
+            # image facing right
             if input_for_algo[i][2] == 0:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row+4][col]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row+4, col):
-                        spot.make_goal(180)
-                        goal_nodes.append((row+4, col, 180))
+                create_avoidance_area(row, col, grid, goal_nodes)
+                for increment in range(4, 1, -1):
+                    if row+increment < ROWS:
+                        spot = grid[row+increment][col]
+                        if spot.is_obstacle() == False:
+                            spot.make_goal(180)
+                            goal_nodes.append((row+increment, col, 180))
+                            break
+            # image facing top
             elif input_for_algo[i][2] == 90:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row][col-4]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row, col-4):
-                        spot.make_goal(270)
-                        goal_nodes.append((row, col-4, 270))
+                create_avoidance_area(row, col, grid, goal_nodes)
+                for increment in range(4, 1, -1):
+                    if col-increment >= 0:
+                        spot = grid[row][col-increment]
+                        if spot.is_obstacle() == False:
+                            spot.make_goal(270)
+                            goal_nodes.append((row, col-increment, 270))
+                            break
+            # image facing left
             elif input_for_algo[i][2] == 180:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row-4][col]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row-4, col):
-                        spot.make_goal(0)
-                        goal_nodes.append((row-4, col, 0))
+                create_avoidance_area(row, col, grid, goal_nodes)
+                for increment in range(4, 1, -1):
+                    if row-increment >= 0:
+                        spot = grid[row-increment][col]
+                        if spot.is_obstacle() == False:
+                            spot.make_goal(0)
+                            goal_nodes.append((row-increment, col, 0))
+                            break
+            # image facing bottom
             elif input_for_algo[i][2] == 270:
-                for x in range(-1, 2, 1):
-                    if col+x >= 0 and col+x < ROWS:
-                        for y in range(-1, 2, 1):
-                            if row+y >= 0 and row+y < ROWS:
-                                spot = grid[row+y][col+x]
-                                spot.make_obstacle_light()
-                spot = grid[row][col]
-                spot.make_obstacle()
-                spot = grid[row][col+4]
-                if spot != start and spot.is_obstacle() == False:
-                    if goal_nodes[len(goal_nodes)-1] != (row, col+4):
-                        spot.make_goal(90)
-                        goal_nodes.append((row, col+4, 90))
+                create_avoidance_area(row, col, grid, goal_nodes)
+                for increment in range(4, 1, -1):
+                    if col+increment < ROWS:
+                        spot = grid[row][col+increment]
+                        if spot.is_obstacle() == False:
+                            spot.make_goal(90)
+                            goal_nodes.append((row, col+increment, 90))
+                            break
 
     full_path = []
     full_ins = []
@@ -417,7 +462,7 @@ def visualize(and_inputs):
         full_ins.append(input_i)
     return shp3, full_path, full_ins
 
-seq, path, ins = visualize(["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
-print(seq)
-print(path)
-print(ins)
+#seq, path, ins = visualize(["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
+#print(seq)
+#print(path)
+#print(ins)

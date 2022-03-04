@@ -1,3 +1,4 @@
+from cgitb import reset
 import pygame
 from queue import PriorityQueue
 import numpy as np
@@ -356,6 +357,59 @@ def get_clicked_pos(pos, rows, width):
 
     return row, col
 
+def create_avoidance_area(row, col, grid, goal_nodes):
+    reset_nodes = []
+    for x in range(-1, 2, 1):
+        if col+x >= 0 and col+x < ROWS:
+            for y in range(-1, 2, 1):
+                if row+y >= 0 and row+y < ROWS:
+                    if grid[row+y][col+x].is_goal() == True:
+                        for node in goal_nodes:
+                            if node[0] == row+y and node[1] == col+x:
+                                reset_nodes.append(node)
+                    spot = grid[row+y][col+x]
+                    spot.make_obstacle_light()
+    spot = grid[row][col]
+    spot.make_obstacle()
+
+    # find for overlapped goal node
+    for node in reset_nodes:
+        row = node[0]
+        col = node[1]
+        direction = node[2]
+        goal_nodes.remove(node)
+        for increment in range(0, 3):
+            if direction == 0:
+                spot = grid[row+increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(0)
+                    goal_nodes.append((row+increment, col, 0))
+                    break
+            elif direction == 90:
+                spot = grid[row][col-increment]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(90)
+                    goal_nodes.append((row, col-increment, 90))
+                    break
+            elif direction == 180:
+                spot = grid[row-increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(180)
+                    goal_nodes.append((row-increment, col, 180))
+                    break
+            elif direction == 270:
+                spot = grid[row][col+increment]
+                if spot.is_obstacle() == False:
+                    spot.make_goal(270)
+                    goal_nodes.append((row, col+increment, 270))
+                    break
+    return
+
+# TEST ONLY
+def android_add_input(android_input, row, col, direction):
+    android_input.append(str(len(android_input))+","+str(row)+","+str(abs(col-20))+","+direction)
+    return
+
 def main(win, width):
     grid = make_grid(ROWS, width)
 
@@ -371,19 +425,22 @@ def main(win, width):
 
     draw(win, grid, ROWS, width, shp, goal_nodes)
 
+    # TEST ONLY variable to get input from android
+    android_input = []
+
     for i in range(4):
         for j in range(16, 20):
             spot = grid[i][j]
             spot.start_area()
 
-    '''
+    # border avoidance zone
     for i in (0, 19):
         for j in range(20):
             spot = grid[i][j]
             spot.make_obstacle_light()
             spot = grid[j][i]
             spot.make_obstacle_light()
-    '''
+
 
     while run:
         draw(win, grid, ROWS, width, shp, goal_nodes)
@@ -409,6 +466,7 @@ def main(win, width):
                 if event.key == pygame.K_r:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
+                    android_add_input(android_input, row, col, "E")
                     spot = grid[row][col]
                     if not start and row < 3 and col > 15:
                         car_dir = 0
@@ -418,84 +476,70 @@ def main(win, width):
                 elif event.key == pygame.K_f:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
+                    android_add_input(android_input, row, col, "N")
                     spot = grid[row][col]
                     if not start and row < 3 and col > 15:
                         car_dir = 90
                         start = spot
                         start.make_start(90)
                         goal_nodes.append((row, col, 90))
-            
+
                 elif event.key == pygame.K_w:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row][col-4]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row, col-4):
-                            spot.make_goal(270)
-                            goal_nodes.append((row, col-4, 270))
+                    android_add_input(android_input, row, col, "N")
+                    create_avoidance_area(row, col, grid, goal_nodes)
+                    for increment in range(4, 1, -1):
+                        if col-increment >= 0:
+                            spot = grid[row][col-increment]
+                            if spot.is_obstacle() == False:
+                                spot.make_goal(270)
+                                goal_nodes.append((row, col-increment, 270))
+                                break
 
                 elif event.key == pygame.K_a:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row-4][col]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row-4, col):
-                            spot.make_goal(0)
-                            goal_nodes.append((row-4, col, 0))
+                    android_add_input(android_input, row, col, "W")
+                    create_avoidance_area(row, col, grid, goal_nodes)
+                    for increment in range(4, 1, -1):
+                        if row-increment >= 0:
+                            spot = grid[row-increment][col]
+                            if spot.is_obstacle() == False:
+                                spot.make_goal(0)
+                                goal_nodes.append((row-increment, col, 0))
+                                break
 
                 elif event.key == pygame.K_s:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row][col+4]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row, col+4):
-                            spot.make_goal(90)
-                            goal_nodes.append((row, col+4, 90))
+                    android_add_input(android_input, row, col, "S")
+                    create_avoidance_area(row, col, grid, goal_nodes)
+                    for increment in range(4, 1, -1):
+                        if col+increment < ROWS:
+                            spot = grid[row][col+increment]
+                            if spot.is_obstacle() == False:
+                                spot.make_goal(90)
+                                goal_nodes.append((row, col+increment, 90))
+                                break
 
                 elif event.key == pygame.K_d:
                     pos = pygame.mouse.get_pos()
                     row, col = get_clicked_pos(pos, ROWS, width)
-                    for x in range(-1, 2, 1):
-                        if col+x >= 0 and col+x < ROWS:
-                            for y in range(-1, 2, 1):
-                                if row+y >= 0 and row+y < ROWS:
-                                    spot = grid[row+y][col+x]
-                                    spot.make_obstacle_light()
-                    spot = grid[row][col]
-                    spot.make_obstacle()
-                    spot = grid[row+4][col]
-                    if spot != start and spot.is_obstacle() == False:
-                        if goal_nodes[len(goal_nodes)-1] != (row+4, col):
-                            spot.make_goal(180)
-                            goal_nodes.append((row+4, col, 180))
+                    android_add_input(android_input, row, col, "E")
+                    create_avoidance_area(row, col, grid, goal_nodes)
+                    for increment in range(4, 1, -1):
+                        if row+increment < ROWS:
+                            spot = grid[row+increment][col]
+                            if spot.is_obstacle() == False:
+                                spot.make_goal(180)
+                                goal_nodes.append((row+increment, col, 180))
+                                break
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
                     # pass
+                    print("Android input:", android_input)
                     print("Goal nodes:", goal_nodes)
                     shp = calc_TSP(goal_nodes)
                     shp2 = shp.copy()
