@@ -1,10 +1,13 @@
-from cgitb import reset
+from asyncio.windows_events import NULL
+from operator import ne
+
 import pygame
 from queue import PriorityQueue
 import numpy as np
 import os
 import networkx as nx
 import numpy as np
+import math
 
 pygame.init()
 
@@ -111,6 +114,9 @@ class Spot:
         self.heading = goal_h
         self.color = TEAL
 
+    def change_heading(self, heading):
+        self.heading = heading
+
     def start_area(self):
         self.color = YELLOW
 
@@ -121,15 +127,23 @@ class Spot:
         self.neighbors = []
         if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_obstacle(): # NORTH
             self.neighbors.append(grid[self.row + 1][self.col])
+            # grid[self.row + 1][self.col].change_heading(90)
+            # print(grid[self.row + 1][self.col].get_pos())
 
         if self.row > 0 and not grid[self.row - 1][self.col].is_obstacle(): # SOUTH
             self.neighbors.append(grid[self.row - 1][self.col])
+            # grid[self.row - 1][self.col].change_heading(270)
+            # print(grid[self.row - 1][self.col].get_pos())
 
         if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_obstacle(): # EAST
             self.neighbors.append(grid[self.row][self.col + 1])
+            # grid[self.row][self.col + 1].change_heading(0)
+            # print(grid[self.row][self.col + 1].get_pos())
 
         if self.col > 0 and not grid[self.row][self.col - 1].is_obstacle(): # WEST
             self.neighbors.append(grid[self.row][self.col - 1])
+            # grid[self.row][self.col - 1].change_heading(180)
+            # print(grid[self.row][self.col - 1].get_pos())
 
     # compares 2 different spots (grids)
     def __lt__(self, other):
@@ -152,9 +166,14 @@ def calc_TSP(node_c):
 
 # our A* heuristic, h(x), in euclidean distance
 def h(p1, p2):
+    add_cost = 0
     x1, y1, h1 = p1
     x2, y2, h2 = p2
-    return abs(x1 - x2) + abs(y1 - y2)
+    h1 = math.radians(h1)
+    h2 = math.radians(h2)
+
+    cost = abs(x1 - x2) + abs(y1 - y2) + abs(h1 - h2)
+    return cost
 
 def reconstruct_path(came_from, current, draw):
     path = []
@@ -173,6 +192,7 @@ def reconstruct_path(came_from, current, draw):
 
     for c in range(len(path_r)):
         cx, cy, cheading = path_r[c]
+        # print("cheading = " +str(cheading))
         if c+1 < len(path_r):
             path_r[c+1] = list(path_r[c+1])
             nx, ny, nheading = path_r[c+1]
@@ -283,26 +303,61 @@ def algorithm(draw, grid, start, end):
             if event.type == pygame.QUIT:
                 pygame.quit()
         
+
         current = open_set.get()[2]
+        print(current.get_pos())
         open_set_hash.remove(current)
 
         if current == end:
             return reconstruct_path(came_from, end, draw)
 
         for neighbor in current.neighbors:
-            temp_g_score = g_score[current] + 1
+            temp_h = -1
+            add_cost = 0
+            cx, cy, ch = current.get_pos()
+            nx, ny, nh = neighbor.get_pos()
+            if nx > cx:
+                temp_h = 0
+            elif nx < cx:
+                temp_h = 180
+            elif ny > cy:
+                temp_h = 270
+            elif ny < cy:
+                temp_h = 90
+
+            
+
+            if neighbor != end:
+                neighbor.change_heading(temp_h)
+            else:
+                print("neighbor is end")
+            
+            ta = abs(ch - temp_h)
+
+                # print("turning angle " + str(ta))
+            if ta >= 90:
+                print("90deg")
+                add_cost = add_cost + 1
+            temp_g_score = g_score[current] + 1 + add_cost
 
             if temp_g_score < g_score[neighbor]:
                 came_from[neighbor] = current
                 g_score[neighbor] = temp_g_score
-                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
+                # print("ch is " + str(ch))
+                if neighbor != end:
+                    f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
+                else:
+                    ex, ey, eh = neighbor.get_pos()[0], neighbor.get_pos()[1], temp_h
+                    f_score[neighbor] = temp_g_score + h((ex, ey, eh), end.get_pos())
+
+
                 if neighbor not in open_set_hash:
                     count += 1
                     open_set.put((f_score[neighbor], count, neighbor))
                     open_set_hash.add(neighbor)
                     if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_start() and not neighbor.is_close():
                         neighbor.make_open()
-
+        pygame.time.delay(10)
         draw()
 
         if current != start and not current.is_path() and not current.is_goal() and not current.is_start():
@@ -535,6 +590,12 @@ def main(win, width):
                                 spot.make_goal(180)
                                 goal_nodes.append((row+increment, col, 180))
                                 break
+
+                elif event.key == pygame.K_q:
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, ROWS, width)
+                    create_avoidance_area(row, col, grid, goal_nodes)
+
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not started:
