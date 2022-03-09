@@ -363,8 +363,6 @@ def algorithm(draw, grid, start, end):
             elif ny < cy:
                 temp_h = 90
 
-            
-
             if neighbor != end:
                 neighbor.change_heading(temp_h)
             # else:
@@ -376,6 +374,9 @@ def algorithm(draw, grid, start, end):
             if ta >= 90:
                 # print("90deg")
                 add_cost = add_cost + 1
+
+            if len(current.neighbors) < 4:
+                add_cost = add_cost + 0.04
 
             temp_g_score = g_score[current] + 1 + add_cost
 
@@ -424,17 +425,17 @@ def draw_grid(win, rows, width):
         for j in range(rows):
             pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
 
-def draw(win, grid, rows, width, shp, gn):
+def draw(win, grid, rows, width, gn):
     win.fill(WHITE)
 
     for row in grid:
         for spot in row:
             spot.draw(win)
 
-    for x in shp:
+    for x in range(len(gn)):
         text = font.render(str(x), True, BLACK)
         textRect = text.get_rect()
-        textRect.topleft = np.array(gn[shp[x]][:2]) * (WIDTH // ROWS)
+        textRect.topleft = np.array(gn[x][:2]) * (WIDTH // ROWS)
         win.blit(text, textRect)
 
     draw_grid(win, rows, width)
@@ -550,7 +551,7 @@ def main(win):
     shp = []
     global car_dir
 
-    draw(win, grid, ROWS, WIDTH, shp, goal_nodes)
+    draw(win, grid, ROWS, WIDTH, goal_nodes)
 
     # TEST ONLY variable to get input from android
     android_input = []
@@ -569,7 +570,7 @@ def main(win):
             spot.make_obstacle_light()
 
     while run:
-        draw(win, grid, ROWS, WIDTH, shp, goal_nodes)
+        draw(win, grid, ROWS, WIDTH, goal_nodes)
 
         if not start:
             for i in range(4):
@@ -728,7 +729,7 @@ def main(win):
                         row, col, heading = goal_nodes[n+1]
                         end = grid[row][col]
                         end.make_goal(heading)
-                        input_f, input_i = algorithm(lambda: draw(win, grid, ROWS, WIDTH, shp, goal_nodes), grid, start, end)
+                        input_f, input_i = algorithm(lambda: draw(win, grid, ROWS, WIDTH, goal_nodes), grid, start, end)
                         full_path.append(input_f)
                         full_ins.append(input_i)
                     
