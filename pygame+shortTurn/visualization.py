@@ -378,9 +378,6 @@ def algorithm(draw, grid, start, end):
             if len(current.neighbors) < 4:
                 add_cost = add_cost + 0.5
 
-            if len(current.neighbors) < 4:
-                add_cost = add_cost + 0.04
-
             temp_g_score = g_score[current] + 1 + add_cost
 
             if temp_g_score < g_score[neighbor]:
