@@ -139,6 +139,9 @@ class Image:
         else:
             return None
 
+    def get_all_goal(self):
+        return self.goals
+
     def get_coord(self):
         return self.row, self.col
 
@@ -319,15 +322,21 @@ def algorithm(grid, start, end):
             elif ny < cy:
                 temp_h = 90
 
-            
-
             if neighbor != end:
                 neighbor.change_heading(temp_h)
             
             ta = abs(ch - temp_h)
 
-            if ta >= 90:
+            if ta > 0:
                 add_cost = add_cost + 1
+
+            for x in range(-1, 2, 1):
+                if nx+x >= 0 and nx+x < ROWS:
+                    for y in range(-1, 2, 1):
+                        if ny+y >= 0 and ny+y < ROWS:
+                            grid[nx+x][ny+y].is_obstacle()
+                            add_cost = add_cost + 0.1
+
             temp_g_score = g_score[current] + 1 + add_cost
 
             if temp_g_score < g_score[neighbor]:
@@ -389,7 +398,7 @@ def create_possible_goal(newImage, grid):
     image_direction = newImage.get_dir()
     row, col = newImage.get_coord()
     if image_direction == 0:
-        for increment in range(4, 1, -1):
+        for increment in range(4, 2, -1):
             if row+increment < ROWS:
                 spot = grid[row+increment][col]
                 if spot.is_obstacle() == False:
@@ -403,7 +412,7 @@ def create_possible_goal(newImage, grid):
                                 spot.make_possible_goal()
                                 newImage.add_goal(row+increment, col+jincrement, 180)
     elif image_direction == 90:
-        for increment in range(4, 1, -1):
+        for increment in range(4, 2, -1):
             if col-increment >= 0:
                 spot = grid[row][col-increment]
                 if spot.is_obstacle() == False:
@@ -417,7 +426,7 @@ def create_possible_goal(newImage, grid):
                                 spot.make_possible_goal()
                                 newImage.add_goal(row+jincrement, col-increment, 270)
     elif image_direction == 180:
-        for increment in range(4, 1, -1):
+        for increment in range(4, 2, -1):
             if row-increment >= 0:
                 spot = grid[row-increment][col]
                 if spot.is_obstacle() == False:
@@ -431,7 +440,7 @@ def create_possible_goal(newImage, grid):
                                 spot.make_possible_goal()
                                 newImage.add_goal(row-increment, col+jincrement, 0)
     elif image_direction == 270:
-        for increment in range(4, 1, -1):
+        for increment in range(4, 2, -1):
             if col+increment < ROWS:
                 spot = grid[row][col+increment]
                 if spot.is_obstacle() == False:
@@ -453,6 +462,7 @@ def visualize(and_inputs):
     end = None
     # have we started the algorithm
     goal_nodes = []
+    goal_nodes_tsp = []
     start_images = []
     shp = []
     global car_dir
@@ -531,32 +541,76 @@ def visualize(and_inputs):
                 start_images.append(newImage)
                 create_possible_goal(newImage, grid)
 
+    images_to_remove = []
     # get goal_nodes
     for item in start_images:
         temp = item.get_goal()
         if temp != None:
-            goal_nodes.append(temp)
+            goal_nodes_tsp.append(temp)
+        else:
+            images_to_remove.append(item)
+
+    # remove images from start_images that have no goal nodes
+    for removing_item in images_to_remove:
+        start_images.remove(removing_item)
 
     full_path = []
     full_ins = []
-    shp = calc_TSP(goal_nodes)
+    shp = calc_TSP(goal_nodes_tsp)
     shp2 = shp.copy()
     shp2.pop()
     # index sequence for rpi
     shp3 = [str(x) for x in shp2]
 
+    # populating goal_nodes
+    index = 0
+    while index < len(shp2):
+        if shp2[index] == 0: # first sequence
+            goal_nodes.append(start_images[0].get_goal())
+        else:
+            found_overlapped = False
+            sequence = shp2[index]
+            goal_nodes1 = start_images[sequence].get_all_goal()
+            if index != len(shp2)-1:
+                # check if any overlapping nodes with next goal
+                next_sequence = shp2[index+1]
+                goal_nodes2 = start_images[next_sequence].get_all_goal()
+                for n in goal_nodes1:
+                    for m in goal_nodes2:
+                        if n[:2] == m[:2]:
+                            goal_nodes.append(n)
+                            goal_nodes.append(m)
+                            found_overlapped = True
+                            index = index + 1
+                            break
+                    if found_overlapped == True:
+                        break
+            if found_overlapped == False:
+                # find goal_nodes based on shortest distance
+                current_x, current_y = goal_nodes[-1][:2]
+                shortest_node = None
+                shortest_length = None
+                for next_goal_node in goal_nodes1:
+                    next_x, next_y = next_goal_node[:2]
+                    cal_dist = math.sqrt(pow((current_x - next_x), 2) + pow((current_y - next_y), 2))
+                    if shortest_length == None:
+                        shortest_node = next_goal_node
+                        shortest_length = cal_dist
+                    elif cal_dist < shortest_length:
+                        shortest_node = next_goal_node
+                        shortest_length = cal_dist
+                goal_nodes.append(shortest_node)
+        index = index + 1
+
     for row in grid:
         for spot in row:
             spot.update_neighbors(grid)
     
-    while len(shp2) != 1:
-        n = shp2[0]
+    for n in range(0, len(goal_nodes)-1):
         row, col, heading = goal_nodes[n]
         start = grid[row][col]
         start.make_goal(heading)
-        shp2.pop(0)
-        end_node = shp2[0]
-        row, col, heading = goal_nodes[end_node]
+        row, col, heading = goal_nodes[n+1]
         end = grid[row][col]
         end.make_goal(heading)
         input_f, input_i = algorithm(grid, start, end)
@@ -564,7 +618,7 @@ def visualize(and_inputs):
         full_ins.append(input_i)
     return shp3, full_path, full_ins
 
-seq, path, ins = visualize(['0,2,1,N', '1,4,11,E', '2,14,2,N', '3,8,3,W', '4,12,13,E', '5,8,15,W'])#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
+seq, path, ins = visualize(['0,2,1,N', '1,4,13,E', '2,14,12,N', '3,14,6,E', '4,10,5,S', '5,8,8,W', '6,11,13,N'])#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
 print("Index sequnce:", seq)
 print("Full path:", path)
 print("Full instructions:", ins)

@@ -343,7 +343,6 @@ def algorithm(draw, grid, start, end):
         
 
         current = open_set.get()[2]
-        # print(current.get_pos())
         open_set_hash.remove(current)
 
         if current == end:
@@ -365,19 +364,11 @@ def algorithm(draw, grid, start, end):
 
             if neighbor != end:
                 neighbor.change_heading(temp_h)
-            # else:
-                # print("neighbor is end")
             
             ta = abs(ch - temp_h)
 
-            # print("turning angle " + str(ta))
-            if 0 < ta <= 90:
-                # print("90deg")
+            if ta > 0:
                 add_cost = add_cost + 1
-
-            if 90 < ta <= 180:
-                add_cost = add_cost + 2
-            
             
             for x in range(-1, 2, 1):
                 if nx+x >= 0 and nx+x < ROWS:
@@ -391,7 +382,6 @@ def algorithm(draw, grid, start, end):
             if temp_g_score < g_score[neighbor]:
                 came_from[neighbor] = current
                 g_score[neighbor] = temp_g_score
-                # print("ch is " + str(ch))
                 if neighbor != end:
                     f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
                 else:
