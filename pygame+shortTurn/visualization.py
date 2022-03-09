@@ -375,8 +375,12 @@ def algorithm(draw, grid, start, end):
                 # print("90deg")
                 add_cost = add_cost + 1
             
-            if len(current.neighbors) < 4:
-                add_cost = add_cost + 0.5
+            for x in range(-1, 2, 1):
+                if nx+x >= 0 and nx+x < ROWS:
+                    for y in range(-1, 2, 1):
+                        if ny+y >= 0 and ny+y < ROWS:
+                            grid[nx+x][ny+y].is_obstacle()
+                            add_cost = add_cost + 0.1
 
             temp_g_score = g_score[current] + 1 + add_cost
 
