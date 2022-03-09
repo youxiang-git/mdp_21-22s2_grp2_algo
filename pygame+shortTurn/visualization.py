@@ -363,8 +363,6 @@ def algorithm(draw, grid, start, end):
             elif ny < cy:
                 temp_h = 90
 
-            
-
             if neighbor != end:
                 neighbor.change_heading(temp_h)
             # else:
@@ -373,9 +371,12 @@ def algorithm(draw, grid, start, end):
             ta = abs(ch - temp_h)
 
             # print("turning angle " + str(ta))
-            if ta >= 90:
+            if ta > 0:
                 # print("90deg")
                 add_cost = add_cost + 1
+            
+            if len(current.neighbors) < 4:
+                add_cost = add_cost + 0.5
 
             temp_g_score = g_score[current] + 1 + add_cost
 
