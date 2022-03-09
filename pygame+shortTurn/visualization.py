@@ -371,9 +371,13 @@ def algorithm(draw, grid, start, end):
             ta = abs(ch - temp_h)
 
             # print("turning angle " + str(ta))
-            if ta > 0:
+            if 0 < ta <= 90:
                 # print("90deg")
                 add_cost = add_cost + 1
+
+            if 90 < ta <= 180:
+                add_cost = add_cost + 2
+            
             
             for x in range(-1, 2, 1):
                 if nx+x >= 0 and nx+x < ROWS:
