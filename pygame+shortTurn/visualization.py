@@ -473,61 +473,65 @@ def create_possible_goal(newImage, grid):
     image_direction = newImage.get_dir()
     row, col = newImage.get_coord()
     if image_direction == 0:
-        for increment in range(4, 2, -1):
-            if row+increment < ROWS:
-                spot = grid[row+increment][col]
-                if spot.is_obstacle() == False:
-                    spot.make_possible_goal()
-                    newImage.add_goal(row+increment, col, 180)
-                if increment == 4:
-                    for jincrement in range(1, -2, -2):
-                        if col+jincrement >= 0 and col+jincrement < ROWS:
-                            spot = grid[row+increment][col+jincrement]
-                            if spot.is_obstacle() == False:
-                                spot.make_possible_goal()
-                                newImage.add_goal(row+increment, col+jincrement, 180)
+        # for increment in range(4, 2, -1):
+        increment = 4
+        if row+increment < ROWS:
+            spot = grid[row+increment][col]
+            if spot.is_obstacle() == False:
+                spot.make_possible_goal()
+                newImage.add_goal(row+increment, col, 180)
+            # if increment == 4:
+            #     for jincrement in range(1, -2, -2):
+            #         if col+jincrement >= 0 and col+jincrement < ROWS:
+            #             spot = grid[row+increment][col+jincrement]
+            #             if spot.is_obstacle() == False:
+            #                 spot.make_possible_goal()
+            #                 newImage.add_goal(row+increment, col+jincrement, 180)
     elif image_direction == 90:
-        for increment in range(4, 2, -1):
-            if col-increment >= 0:
-                spot = grid[row][col-increment]
-                if spot.is_obstacle() == False:
-                    spot.make_possible_goal()
-                    newImage.add_goal(row, col-increment, 270)
-                if increment == 4:
-                    for jincrement in range(1, -2, -2):
-                        if row+jincrement >= 0 and row+jincrement < ROWS:
-                            spot = grid[row+jincrement][col-increment]
-                            if spot.is_obstacle() == False:
-                                spot.make_possible_goal()
-                                newImage.add_goal(row+jincrement, col-increment, 270)
+        # for increment in range(4, 2, -1):
+        increment = 4
+        if col-increment >= 0:
+            spot = grid[row][col-increment]
+            if spot.is_obstacle() == False:
+                spot.make_possible_goal()
+                newImage.add_goal(row, col-increment, 270)
+            # if increment == 4:
+            #     for jincrement in range(1, -2, -2):
+            #         if row+jincrement >= 0 and row+jincrement < ROWS:
+            #             spot = grid[row+jincrement][col-increment]
+            #             if spot.is_obstacle() == False:
+            #                 spot.make_possible_goal()
+            #                 newImage.add_goal(row+jincrement, col-increment, 270)
     elif image_direction == 180:
-        for increment in range(4, 2, -1):
-            if row-increment >= 0:
-                spot = grid[row-increment][col]
-                if spot.is_obstacle() == False:
-                    spot.make_possible_goal()
-                    newImage.add_goal(row-increment, col, 0)
-                if increment == 4:
-                    for jincrement in range(1, -2, -2):
-                        if col+jincrement >= 0 and col+jincrement < ROWS:
-                            spot = grid[row-increment][col+jincrement]
-                            if spot.is_obstacle() == False:
-                                spot.make_possible_goal()
-                                newImage.add_goal(row-increment, col+jincrement, 0)
+        # for increment in range(4, 2, -1):
+        increment = 4
+        if row-increment >= 0:
+            spot = grid[row-increment][col]
+            if spot.is_obstacle() == False:
+                spot.make_possible_goal()
+                newImage.add_goal(row-increment, col, 0)
+            # if increment == 4:
+            #     for jincrement in range(1, -2, -2):
+            #         if col+jincrement >= 0 and col+jincrement < ROWS:
+            #             spot = grid[row-increment][col+jincrement]
+            #             if spot.is_obstacle() == False:
+            #                 spot.make_possible_goal()
+            #                 newImage.add_goal(row-increment, col+jincrement, 0)
     elif image_direction == 270:
-        for increment in range(4, 2, -1):
-            if col+increment < ROWS:
-                spot = grid[row][col+increment]
-                if spot.is_obstacle() == False:
-                    spot.make_possible_goal()
-                    newImage.add_goal(row, col+increment, 90)
-                if increment == 4:
-                    for jincrement in range(1, -2, -2):
-                        if row+jincrement >= 0 and row+jincrement < ROWS:
-                            spot = grid[row+jincrement][col+increment]
-                            if spot.is_obstacle() == False:
-                                spot.make_possible_goal()
-                                newImage.add_goal(row+jincrement, col+increment, 90)
+        # for increment in range(4, 2, -1):
+        increment = 4
+        if col+increment < ROWS:
+            spot = grid[row][col+increment]
+            if spot.is_obstacle() == False:
+                spot.make_possible_goal()
+                newImage.add_goal(row, col+increment, 90)
+            # if increment == 4:
+            #     for jincrement in range(1, -2, -2):
+            #         if row+jincrement >= 0 and row+jincrement < ROWS:
+            #             spot = grid[row+jincrement][col+increment]
+            #             if spot.is_obstacle() == False:
+            #                 spot.make_possible_goal()
+            #                 newImage.add_goal(row+jincrement, col+increment, 90)
 
 # TEST ONLY
 def android_add_input(android_input, row, col, direction):
@@ -675,6 +679,7 @@ def main(win):
                     shp2.pop()
                     # index sequence for rpi
                     shp3 = [str(x) for x in shp2]
+                    shp3.pop(0)
 
                     # populating goal_nodes
                     index = 0
