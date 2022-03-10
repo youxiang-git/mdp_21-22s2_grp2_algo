@@ -1,14 +1,7 @@
-from asyncio.windows_events import NULL
-from email.errors import NonPrintableDefect
-from operator import ne
-from posixpath import pathsep
-
 import pygame
-from queue import PriorityQueue
 import numpy as np
 import networkx as nx
 import numpy as np
-import math
 
 pygame.init()
 
@@ -122,10 +115,6 @@ class Spot:
     def make_goal(self, goal_h):
         self.heading = goal_h
         self.color = TEAL
-
-    def remove_goal(self):
-        self.heading = None
-        self.color = WHITE
 
     def change_heading(self, heading):
         self.heading = heading
@@ -372,6 +361,9 @@ def algorithm(draw, grid, start, end_image, graph):
             elif turnTheta == 90 or turnTheta == -270 or turnTheta == -90 or turnTheta == 270:
                 turn_count = turn_count + 1
             cur_car_dir = cheading
+
+            if best_turn_no != None and turn_count > best_turn_no:
+                break
         
         if best_turn_no == None or turn_count <= best_turn_no:
             best_path = path_ins
@@ -390,8 +382,9 @@ def algorithm(draw, grid, start, end_image, graph):
     for i in range(1, len(best_path)-1):
         row, col, heading = best_path[i]
         path_node = grid[row][col]
-        path_node.make_path()
-        draw()
+        if path_node.is_goal() == False:
+            path_node.make_path()
+            draw()
 
     return last_coord, best_path_f, path_i
 
