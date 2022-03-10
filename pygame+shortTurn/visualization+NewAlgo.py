@@ -182,6 +182,9 @@ class Image:
                 self.goals.remove(goal)
         return
 
+    def remove_all_except(self, coord):
+        self.goals = [coord]
+
 class RobotStart:
     def __init__(self, row, col, direction):
         self.row = row
@@ -278,9 +281,27 @@ def algorithm_handler(draw, grid, start_images, shp, graph):
     full_path = []
     full_ins = []
     goal_nodes = [start_images[0].get_goal()]
+
     for n in range(1, len(shp)):
         start = goal_nodes[-1]
         end_image = start_images[shp[n]]
+
+        # find overlapped goal node
+        if n+1 < len(shp):
+            found = False
+            next_image = start_images[shp[n+1]]
+            goal_nodes1 = end_image.get_all_goal()
+            goal_nodes2 = next_image.get_all_goal()
+            for i in goal_nodes1:
+                for j in goal_nodes2:
+                    if i[:2] == j[:2]:
+                        end_image.remove_all_except(i)
+                        next_image.remove_all_except(j)
+                        found = True
+                        break
+                if found == True:
+                    break
+
         # run algo to find all possible path and return the least turns path & ins
         add_end, input_f, input_i = algorithm(draw, grid, start, end_image, graph)
         goal_nodes.append(add_end)
@@ -369,8 +390,6 @@ def algorithm(draw, grid, start, end_image, graph):
             best_path = path_ins
             best_path_f = path_f
             best_turn_no = turn_count
-
-    print(best_turn_no)
 
     path_i = runRobotMove(best_path, draw)
 

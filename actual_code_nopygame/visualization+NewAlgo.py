@@ -156,6 +156,9 @@ class Image:
             if goal[0] == row and goal[1] == col:
                 self.goals.remove(goal)
         return
+    
+    def remove_all_except(self, coord):
+        self.goals = [coord]
 
 class RobotStart:
     def __init__(self, row, col, direction):
@@ -248,9 +251,27 @@ def algorithm_handler(grid, start_images, shp, graph):
     full_path = []
     full_ins = []
     goal_nodes = [start_images[0].get_goal()]
+
     for n in range(1, len(shp)):
         start = goal_nodes[-1]
         end_image = start_images[shp[n]]
+
+        # find overlapped goal node
+        if n+1 < len(shp):
+            found = False
+            next_image = start_images[shp[n+1]]
+            goal_nodes1 = end_image.get_all_goal()
+            goal_nodes2 = next_image.get_all_goal()
+            for i in goal_nodes1:
+                for j in goal_nodes2:
+                    if i[:2] == j[:2]:
+                        end_image.remove_all_except(i)
+                        next_image.remove_all_except(j)
+                        found = True
+                        break
+                if found == True:
+                    break
+
         # run algo to find all possible path and return the least turns path & ins
         add_end, input_f, input_i = algorithm(grid, start, end_image, graph)
         goal_nodes.append(add_end)
@@ -562,7 +583,7 @@ def visualize(and_inputs):
 
     return shp3, full_path, full_ins
 
-# seq, path, ins = visualize(['0,2,1,N', '1,10,11,N'])#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
-# print("Index sequnce:", seq)
-# print("Full path:", path)
-# print("Full instructions:", ins)
+seq, path, ins = visualize( ['0,2,1,N', '1,5,11,E', '2,14,7,N', '3,14,16,W', '4,4,15,E', '5,5,8,S', '6,10,3,N', '7,14,2,E'])#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
+print("Index sequnce:", seq)
+print("Full path:", path)
+print("Full instructions:", ins)
