@@ -319,33 +319,39 @@ def algorithm(draw, grid, start, end_image, graph):
     eheading = None
 
     # find shortest path length goal nodes
-    end_list = end_image.get_all_goal()
-    map_target_cutoff = {}
-    least_cutoff = None
-    for index in range(len(end_list)):
-        row, col, eheading = end_list[index]
-        end = grid[row][col]
-        target = end.get_pos()[:2]
+    # end_list = end_image.get_all_goal()
+    # map_target_cutoff = {}
+    # least_cutoff = None
+    # for index in range(len(end_list)):
+    #     row, col, eheading = end_list[index]
+    #     end = grid[row][col]
+    #     target = end.get_pos()[:2]
 
-        cutoff = nx.shortest_path_length(graph, source=source, target=target)
-        map_target_cutoff[target] = cutoff
-        if least_cutoff == None or cutoff < least_cutoff:
-            least_cutoff = cutoff
+    #     cutoff = nx.shortest_path_length(graph, source=source, target=target)
+    #     map_target_cutoff[target] = cutoff
+    #     if least_cutoff == None or cutoff < least_cutoff:
+    #         least_cutoff = cutoff
 
-    # remove long goal nodes
-    for target in map_target_cutoff.keys():
-        if map_target_cutoff[target] != least_cutoff:
-            end_image.remove_goal(target[0], target[1])
+    # # remove long goal nodes
+    # for target in map_target_cutoff.keys():
+    #     if map_target_cutoff[target] != least_cutoff:
+    #         end_image.remove_goal(target[0], target[1])
 
     # nx all simple path to get all least path
-    end_list = end_image.get_all_goal()
-    all_shortest_path = []
-    for possible_goal in end_list:
-        row, col, eheading = possible_goal
-        end = grid[row][col]
-        target = end.get_pos()[:2]
-        all_shortest_path.extend(list(nx.all_shortest_paths(graph, source=source, target=target)))
+    # end_list = end_image.get_all_goal()
+    # all_shortest_path = []
+    # for possible_goal in end_list:
+    #     row, col, eheading = possible_goal
+    #     end = grid[row][col]
+    #     target = end.get_pos()[:2]
+    #     all_shortest_path.extend(list(nx.all_shortest_paths(graph, source=source, target=target)))
     
+    all_shortest_path = []
+    end = end_image.get_goal()
+    target = end[:2]
+    eheading = end[-1]
+    all_shortest_path.extend(list(nx.all_shortest_paths(graph, source=source, target=target)))
+
     # find the least turn path
     best_turn_no = None
     best_path = None
@@ -478,65 +484,61 @@ def create_possible_goal(newImage, grid):
     image_direction = newImage.get_dir()
     row, col = newImage.get_coord()
     if image_direction == 0:
-        # for increment in range(4, 2, -1):
-        increment = 4
-        if row+increment < ROWS:
-            spot = grid[row+increment][col]
-            if spot.is_obstacle() == False:
-                spot.make_possible_goal()
-                newImage.add_goal(row+increment, col, 180)
-            # if increment == 4:
-            #     for jincrement in range(1, -2, -2):
-            #         if col+jincrement >= 0 and col+jincrement < ROWS:
-            #             spot = grid[row+increment][col+jincrement]
-            #             if spot.is_obstacle() == False:
-            #                 spot.make_possible_goal()
-            #                 newImage.add_goal(row+increment, col+jincrement, 180)
+        for increment in range(4, 2, -1):
+            if row+increment < ROWS:
+                spot = grid[row+increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_possible_goal()
+                    newImage.add_goal(row+increment, col, 180)
+                # if increment == 4:
+                #     for jincrement in range(1, -2, -2):
+                #         if col+jincrement >= 0 and col+jincrement < ROWS:
+                #             spot = grid[row+increment][col+jincrement]
+                #             if spot.is_obstacle() == False:
+                #                 spot.make_possible_goal()
+                #                 newImage.add_goal(row+increment, col+jincrement, 180)
     elif image_direction == 90:
-        # for increment in range(4, 2, -1):
-        increment = 4
-        if col-increment >= 0:
-            spot = grid[row][col-increment]
-            if spot.is_obstacle() == False:
-                spot.make_possible_goal()
-                newImage.add_goal(row, col-increment, 270)
-            # if increment == 4:
-            #     for jincrement in range(1, -2, -2):
-            #         if row+jincrement >= 0 and row+jincrement < ROWS:
-            #             spot = grid[row+jincrement][col-increment]
-            #             if spot.is_obstacle() == False:
-            #                 spot.make_possible_goal()
-            #                 newImage.add_goal(row+jincrement, col-increment, 270)
+        for increment in range(4, 2, -1):
+            if col-increment >= 0:
+                spot = grid[row][col-increment]
+                if spot.is_obstacle() == False:
+                    spot.make_possible_goal()
+                    newImage.add_goal(row, col-increment, 270)
+                    # if increment == 4:
+                    #     for jincrement in range(1, -2, -2):
+                    #         if row+jincrement >= 0 and row+jincrement < ROWS:
+                    #             spot = grid[row+jincrement][col-increment]
+                    #             if spot.is_obstacle() == False:
+                    #                 spot.make_possible_goal()
+                    #                 newImage.add_goal(row+jincrement, col-increment, 270)
     elif image_direction == 180:
-        # for increment in range(4, 2, -1):
-        increment = 4
-        if row-increment >= 0:
-            spot = grid[row-increment][col]
-            if spot.is_obstacle() == False:
-                spot.make_possible_goal()
-                newImage.add_goal(row-increment, col, 0)
-            # if increment == 4:
-            #     for jincrement in range(1, -2, -2):
-            #         if col+jincrement >= 0 and col+jincrement < ROWS:
-            #             spot = grid[row-increment][col+jincrement]
-            #             if spot.is_obstacle() == False:
-            #                 spot.make_possible_goal()
-            #                 newImage.add_goal(row-increment, col+jincrement, 0)
+        for increment in range(4, 2, -1):
+            if row-increment >= 0:
+                spot = grid[row-increment][col]
+                if spot.is_obstacle() == False:
+                    spot.make_possible_goal()
+                    newImage.add_goal(row-increment, col, 0)
+                # if increment == 4:
+                #     for jincrement in range(1, -2, -2):
+                #         if col+jincrement >= 0 and col+jincrement < ROWS:
+                #             spot = grid[row-increment][col+jincrement]
+                #             if spot.is_obstacle() == False:
+                #                 spot.make_possible_goal()
+                #                 newImage.add_goal(row-increment, col+jincrement, 0)
     elif image_direction == 270:
-        # for increment in range(4, 2, -1):
-        increment = 4
-        if col+increment < ROWS:
-            spot = grid[row][col+increment]
-            if spot.is_obstacle() == False:
-                spot.make_possible_goal()
-                newImage.add_goal(row, col+increment, 90)
-            # if increment == 4:
-            #     for jincrement in range(1, -2, -2):
-            #         if row+jincrement >= 0 and row+jincrement < ROWS:
-            #             spot = grid[row+jincrement][col+increment]
-            #             if spot.is_obstacle() == False:
-            #                 spot.make_possible_goal()
-            #                 newImage.add_goal(row+jincrement, col+increment, 90)
+        for increment in range(4, 2, -1):
+            if col+increment < ROWS:
+                spot = grid[row][col+increment]
+                if spot.is_obstacle() == False:
+                    spot.make_possible_goal()
+                    newImage.add_goal(row, col+increment, 90)
+                # if increment == 4:
+                #     for jincrement in range(1, -2, -2):
+                #         if row+jincrement >= 0 and row+jincrement < ROWS:
+                #             spot = grid[row+jincrement][col+increment]
+                #             if spot.is_obstacle() == False:
+                #                 spot.make_possible_goal()
+                #                 newImage.add_goal(row+jincrement, col+increment, 90)
 
 # TEST ONLY
 def android_add_input(android_input, row, col, direction):
