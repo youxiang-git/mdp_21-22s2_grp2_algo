@@ -1,6 +1,3 @@
-from asyncio.windows_events import NULL
-from operator import ne
-
 from queue import PriorityQueue
 import numpy as np
 import networkx as nx
@@ -43,6 +40,9 @@ class Spot:
 
     def get_pos(self):
         return self.row, self.col, self.heading
+
+    def get_neighbors(self):
+        return self.neighbors
 
     # this method tells us if this node has been already visited / considered
     def is_close(self):
@@ -156,6 +156,9 @@ class Image:
             if goal[0] == row and goal[1] == col:
                 self.goals.remove(goal)
         return
+    
+    def remove_all_except(self, coord):
+        self.goals = [coord]
 
 class RobotStart:
     def __init__(self, row, col, direction):
@@ -180,50 +183,6 @@ def calc_TSP(node_c):
         g1[node][node2]['weight'] = xy
     tsp_path = nx.approximation.traveling_salesman_problem(g1, weight = 'weight', cycle = True, method = nx.algorithms.approximation.traveling_salesman.greedy_tsp)
     return tsp_path
-
-# our A* heuristic, h(x), in euclidean distance
-def h(p1, p2):
-    add_cost = 0
-    x1, y1, h1 = p1
-    x2, y2, h2 = p2
-    h1 = math.radians(h1)
-    h2 = math.radians(h2)
-
-    cost = abs(x1 - x2) + abs(y1 - y2) + abs(h1 - h2)
-    return cost
-
-def reconstruct_path(came_from, current):
-    path = []
-    path_f = []
-    path_ins = []
-    path.append(current.get_pos())
-    while current in came_from:
-        current = came_from[current]
-        current_pos = current.get_pos()
-        path.append(current_pos)
-        if not current.is_goal():
-            current.make_path()
-    
-    path_r = list(reversed(path))
-
-    for c in range(len(path_r)):
-        cx, cy, cheading = path_r[c]
-        if c+1 < len(path_r):
-            path_r[c+1] = list(path_r[c+1])
-            nx, ny, nheading = path_r[c+1]
-            if nx > cx:
-                cheading = 0
-            elif nx < cx:
-                cheading = 180
-            elif ny > cy:
-                cheading = 270
-            elif ny < cy:
-                cheading = 90
-        path_ins.append((cx, cy, cheading))
-        path_f.append(str(cx)+","+str(abs(cy-19))+","+str(cheading))
-    
-    path_i = runRobotMove(path_ins)
-    return path_f, path_i
 
 def runRobotMove(path):
     global car_dir
@@ -288,78 +247,131 @@ def numToLetter(num):
             19 : "S", 20 : "T"}
     return options[num]
 
-def algorithm(grid, start, end):
-    count = 0
-    open_set = PriorityQueue()
-    open_set.put((0, count, start)) # Add the start node to the priority queue
-    came_from = {}
-    g_score = {spot: float("inf") for row in grid for spot in row}
-    g_score[start] = 0
-    f_score = {spot: float("inf") for row in grid for spot in row}
-    f_score[start] = h(start.get_pos(), end.get_pos())
+def algorithm_handler(grid, start_images, shp, graph):
+    full_path = []
+    full_ins = []
+    goal_nodes = [start_images[0].get_goal()]
 
-    #check items in PQ
-    open_set_hash = {start}
+    for n in range(1, len(shp)):
+        start = goal_nodes[-1]
+        end_image = start_images[shp[n]]
 
-    while not open_set.empty():
-        current = open_set.get()[2]
-        open_set_hash.remove(current)
+        # find overlapped goal node
+        if n+1 < len(shp):
+            found = False
+            next_image = start_images[shp[n+1]]
+            goal_nodes1 = end_image.get_all_goal()
+            goal_nodes2 = next_image.get_all_goal()
+            for i in goal_nodes1:
+                for j in goal_nodes2:
+                    if i[:2] == j[:2]:
+                        end_image.remove_all_except(i)
+                        next_image.remove_all_except(j)
+                        found = True
+                        break
+                if found == True:
+                    break
 
-        if current == end:
-            return reconstruct_path(came_from, end)
+        # run algo to find all possible path and return the least turns path & ins
+        add_end, input_f, input_i = algorithm(grid, start, end_image, graph)
+        goal_nodes.append(add_end)
+        full_path.append(input_f)
+        full_ins.append(input_i)
 
-        for neighbor in current.neighbors:
-            temp_h = -1
-            add_cost = 0
-            cx, cy, ch = current.get_pos()
-            nx, ny, nh = neighbor.get_pos()
-            if nx > cx:
-                temp_h = 0
-            elif nx < cx:
-                temp_h = 180
-            elif ny > cy:
-                temp_h = 270
-            elif ny < cy:
-                temp_h = 90
+    return goal_nodes, full_path, full_ins
 
-            if neighbor != end:
-                neighbor.change_heading(temp_h)
+def algorithm(grid, start, end_image, graph):
+    row, col, heading = start
+    start = grid[row][col]
+    start.make_goal(heading)
+    source = start.get_pos()[:2]
+    sheading = start.get_pos()[-1]
+    eheading = None
+
+    # find shortest path length goal nodes
+    end_list = end_image.get_all_goal()
+    map_target_cutoff = {}
+    least_cutoff = None
+    for index in range(len(end_list)):
+        row, col, eheading = end_list[index]
+        end = grid[row][col]
+        target = end.get_pos()[:2]
+
+        cutoff = nx.shortest_path_length(graph, source=source, target=target)
+        map_target_cutoff[target] = cutoff
+        if least_cutoff == None or cutoff < least_cutoff:
+            least_cutoff = cutoff
+
+    # remove long goal nodes
+    for target in map_target_cutoff.keys():
+        if map_target_cutoff[target] != least_cutoff:
+            end_image.remove_goal(target[0], target[1])
+
+    # nx all simple path to get all least path
+    end_list = end_image.get_all_goal()
+    all_shortest_path = []
+    for possible_goal in end_list:
+        row, col, eheading = possible_goal
+        end = grid[row][col]
+        target = end.get_pos()[:2]
+        all_shortest_path.extend(list(nx.all_shortest_paths(graph, source=source, target=target)))
+    
+    # all_shortest_path = []
+    # end = end_image.get_goal()
+    # target = end[:2]
+    # eheading = end[-1]
+    # all_shortest_path.extend(list(nx.all_shortest_paths(graph, source=source, target=target)))
+
+    # find the least turn path
+    best_turn_no = None
+    best_path = None
+    best_path_f = None
+
+    for path in all_shortest_path:
+        path_ins = []
+        path_f = []
+        cur_car_dir = sheading
+        turn_count = 0
+
+        for index in range(len(path)):
+            cx, cy = path[index]
+            cheading = 0
+            if index+1 < len(path):
+                path[index+1] = list(path[index+1])
+                tx, ty = path[index+1]
+                if tx > cx:
+                    cheading = 0
+                elif tx < cx:
+                    cheading = 180
+                elif ty > cy:
+                    cheading = 270
+                elif ty < cy:
+                    cheading = 90
+            else:
+                cheading = eheading
+            path_ins.append((cx, cy, cheading))
+            path_f.append(str(cx)+","+str(abs(cy-19))+","+str(cheading))
             
-            ta = abs(ch - temp_h)
+            turnTheta = cheading - cur_car_dir
+            if turnTheta == 180 or turnTheta == -180:
+                turn_count = turn_count + 2
+            elif turnTheta == 90 or turnTheta == -270 or turnTheta == -90 or turnTheta == 270:
+                turn_count = turn_count + 1
+            cur_car_dir = cheading
 
-            if ta > 0:
-                add_cost = add_cost + 1
+            if best_turn_no != None and turn_count > best_turn_no:
+                break
+        
+        if best_turn_no == None or turn_count <= best_turn_no:
+            best_path = path_ins
+            best_path_f = path_f
+            best_turn_no = turn_count
 
-            for x in range(-1, 2, 1):
-                if nx+x >= 0 and nx+x < ROWS:
-                    for y in range(-1, 2, 1):
-                        if ny+y >= 0 and ny+y < ROWS:
-                            grid[nx+x][ny+y].is_obstacle()
-                            add_cost = add_cost + 0.1
+    path_i = runRobotMove(best_path)
 
-            temp_g_score = g_score[current] + 1 + add_cost
+    last_coord = best_path[-1]
 
-            if temp_g_score < g_score[neighbor]:
-                came_from[neighbor] = current
-                g_score[neighbor] = temp_g_score
-                if neighbor != end:
-                    f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-                else:
-                    ex, ey, eh = neighbor.get_pos()[0], neighbor.get_pos()[1], temp_h
-                    f_score[neighbor] = temp_g_score + h((ex, ey, eh), end.get_pos())
-                
-
-                if neighbor not in open_set_hash:
-                    count += 1
-                    open_set.put((f_score[neighbor], count, neighbor))
-                    open_set_hash.add(neighbor)
-                    if not neighbor.is_path() and not neighbor.is_goal() and not neighbor.is_start() and not neighbor.is_close():
-                        neighbor.make_open()
-
-        if current != start and not current.is_path() and not current.is_goal() and not current.is_start():
-            current.make_close()
-
-    return False
+    return last_coord, best_path_f, path_i
 
 def make_grid(rows, width):
     grid = []
@@ -398,7 +410,7 @@ def create_possible_goal(newImage, grid):
     image_direction = newImage.get_dir()
     row, col = newImage.get_coord()
     if image_direction == 0:
-        for increment in range(4, 2, -1):
+        for increment in range(5, 2, -1):
             if row+increment < ROWS:
                 spot = grid[row+increment][col]
                 if spot.is_obstacle() == False:
@@ -412,7 +424,7 @@ def create_possible_goal(newImage, grid):
                 #                 spot.make_possible_goal()
                 #                 newImage.add_goal(row+increment, col+jincrement, 180)
     elif image_direction == 90:
-        for increment in range(4, 2, -1):
+        for increment in range(5, 2, -1):
             if col-increment >= 0:
                 spot = grid[row][col-increment]
                 if spot.is_obstacle() == False:
@@ -426,7 +438,7 @@ def create_possible_goal(newImage, grid):
                     #                 spot.make_possible_goal()
                     #                 newImage.add_goal(row+jincrement, col-increment, 270)
     elif image_direction == 180:
-        for increment in range(4, 2, -1):
+        for increment in range(5, 2, -1):
             if row-increment >= 0:
                 spot = grid[row-increment][col]
                 if spot.is_obstacle() == False:
@@ -440,19 +452,12 @@ def create_possible_goal(newImage, grid):
                 #                 spot.make_possible_goal()
                 #                 newImage.add_goal(row-increment, col+jincrement, 0)
     elif image_direction == 270:
-        for increment in range(4, 2, -1):
+        for increment in range(5, 2, -1):
             if col+increment < ROWS:
                 spot = grid[row][col+increment]
                 if spot.is_obstacle() == False:
                     spot.make_possible_goal()
                     newImage.add_goal(row, col+increment, 90)
-                # if increment == 4:
-                #     for jincrement in range(1, -2, -2):
-                #         if row+jincrement >= 0 and row+jincrement < ROWS:
-                #             spot = grid[row+jincrement][col+increment]
-                #             if spot.is_obstacle() == False:
-                #                 spot.make_possible_goal()
-                #                 newImage.add_goal(row+jincrement, col+increment, 90)
 
 def visualize(and_inputs):
     grid = make_grid(ROWS, WIDTH)
@@ -462,9 +467,7 @@ def visualize(and_inputs):
     end = None
     # have we started the algorithm
     goal_nodes = []
-    goal_nodes_tsp = []
     start_images = []
-    shp = []
     global car_dir
 
     input_for_algo = []
@@ -541,7 +544,11 @@ def visualize(and_inputs):
                 start_images.append(newImage)
                 create_possible_goal(newImage, grid)
 
+    goal_nodes_tsp = []
     images_to_remove = []
+    shp = []
+    graph = nx.Graph()
+
     # get goal_nodes
     for item in start_images:
         temp = item.get_goal()
@@ -554,8 +561,17 @@ def visualize(and_inputs):
     for removing_item in images_to_remove:
         start_images.remove(removing_item)
 
-    full_path = []
-    full_ins = []
+    # update neighbors and create graph
+    for row in grid:
+        for spot in row:
+            if spot.is_obstacle() == False:
+                spot.update_neighbors(grid)
+                current_xy = spot.get_pos()[:2]
+                graph.add_node(current_xy)
+                for neighbors in spot.get_neighbors():
+                    neighbors_xy = neighbors.get_pos()[:2]
+                    graph.add_edge(current_xy, neighbors_xy)
+
     shp = calc_TSP(goal_nodes_tsp)
     shp2 = shp.copy()
     shp2.pop()
@@ -563,63 +579,11 @@ def visualize(and_inputs):
     shp3 = [str(x) for x in shp2]
     shp3.pop(0)
 
-    # populating goal_nodes
-    index = 0
-    while index < len(shp2):
-        if shp2[index] == 0: # first sequence
-            goal_nodes.append(start_images[0].get_goal())
-        else:
-            found_overlapped = False
-            sequence = shp2[index]
-            goal_nodes1 = start_images[sequence].get_all_goal()
-            if index != len(shp2)-1:
-                # check if any overlapping nodes with next goal
-                next_sequence = shp2[index+1]
-                goal_nodes2 = start_images[next_sequence].get_all_goal()
-                for n in goal_nodes1:
-                    for m in goal_nodes2:
-                        if n[:2] == m[:2]:
-                            goal_nodes.append(n)
-                            goal_nodes.append(m)
-                            found_overlapped = True
-                            index = index + 1
-                            break
-                    if found_overlapped == True:
-                        break
-            if found_overlapped == False:
-                # find goal_nodes based on shortest distance
-                current_x, current_y = goal_nodes[-1][:2]
-                shortest_node = None
-                shortest_length = None
-                for next_goal_node in goal_nodes1:
-                    next_x, next_y = next_goal_node[:2]
-                    cal_dist = math.sqrt(pow((current_x - next_x), 2) + pow((current_y - next_y), 2))
-                    if shortest_length == None:
-                        shortest_node = next_goal_node
-                        shortest_length = cal_dist
-                    elif cal_dist < shortest_length:
-                        shortest_node = next_goal_node
-                        shortest_length = cal_dist
-                goal_nodes.append(shortest_node)
-        index = index + 1
+    goal_nodes, full_path, full_ins = algorithm_handler(grid, start_images, shp2, graph)
 
-    for row in grid:
-        for spot in row:
-            spot.update_neighbors(grid)
-    
-    for n in range(0, len(goal_nodes)-1):
-        row, col, heading = goal_nodes[n]
-        start = grid[row][col]
-        start.make_goal(heading)
-        row, col, heading = goal_nodes[n+1]
-        end = grid[row][col]
-        end.make_goal(heading)
-        input_f, input_i = algorithm(grid, start, end)
-        full_path.append(input_f)
-        full_ins.append(input_i)
     return shp3, full_path, full_ins
 
-# seq, path, ins = visualize(['0,1,1,N', '1,11,4,E', '2,6,10,E', '3,1,16,S', '4,18,3,N', '5,18,16,S', '6,13,14,W'])#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
+# seq, path, ins = visualize( ["0,1,2,N","1,1,18,S","2,12,18,S","3,6,11,N","4,17,10,W","5,10,4,E","6,19,4,W"] )#["0,2,2,E", "1,14,13,N", "2,7,12,W", "3,11,7,S"])
 # print("Index sequnce:", seq)
 # print("Full path:", path)
 # print("Full instructions:", ins)
